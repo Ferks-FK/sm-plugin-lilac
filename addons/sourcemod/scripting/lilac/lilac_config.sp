@@ -135,7 +135,7 @@ void lilac_config_setup()
 		"Database to log detections to.\nempty = don't log to database\ndatabase name = log to this database (MySQL & SQLite supported)",
 		FCVAR_PROTECTED);
 	hcvar[CVAR_SPEEDHACK] = new Convar("lilac_speedhack", "5",
-		"Detect Speedhack (CL_Move command stuffing).\n0 = Disabled.\n1 = Log only.\n5 or more = ban on n'th detection (Minimum possible is 5).",
+		"Detect Speedhack.\n0 = Disabled.\n1 = Log only.\n5 or more = ban on n'th detection (Minimum possible is 5).",
 		FCVAR_PROTECTED, true, 0.0, false, 0.0);
 
 	for (int i = 0; i < CVAR_MAX; i++) {
