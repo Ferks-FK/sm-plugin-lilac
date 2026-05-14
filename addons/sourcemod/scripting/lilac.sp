@@ -57,6 +57,7 @@
 #include "lilac/lilac_macro.sp"
 #include "lilac/lilac_noisemaker.sp"
 #include "lilac/lilac_ping.sp"
+#include "lilac/lilac_speedhack.sp"
 #include "lilac/lilac_stock.sp"
 #include "lilac/lilac_string.sp" /* String takes care of chat and names. */
 
@@ -127,6 +128,9 @@ public void OnPluginStart()
 	/* Bans for Macros are 15 minutes by default. */
 	ban_length_overwrite[CHEAT_MACRO] = 15;
 
+	/* Bans for Speedhack are permanent by default. */
+	ban_length_overwrite[CHEAT_SPEEDHACK] = 0;
+
 	/* If sv_maxupdaterate is changed mid-game and then this plugin
 	 * is loaded, then it could lead to false positives.
 	 * Reset all stats on all players already in-game, but ignore lerp.
@@ -149,6 +153,7 @@ public void OnPluginStart()
 	CreateTimer(QUERY_TIMER, timer_query, _, TIMER_REPEAT);
 	CreateTimer(5.0, timer_check_ping, _, TIMER_REPEAT);
 	CreateTimer(5.0, timer_check_lerp, _, TIMER_REPEAT);
+	CreateTimer(1.0, timer_check_speedhack, _, TIMER_REPEAT);
 	CreateTimer(0.5, timer_check_aimlock, _, TIMER_REPEAT);
 	CreateTimer(60.0 * 5.0, timer_decrement_macro, _, TIMER_REPEAT);
 

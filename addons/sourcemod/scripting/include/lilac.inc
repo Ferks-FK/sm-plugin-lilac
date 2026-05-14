@@ -38,7 +38,8 @@
 #define CHEAT_NOISEMAKER_SPAM    8
 #define CHEAT_MACRO              9 /* Macros aren't actually cheats, but are forwarded as such. */
 #define CHEAT_NEWLINE_NAME      10
-#define CHEAT_MAX               11
+#define CHEAT_SPEEDHACK         11
+#define CHEAT_MAX               12
 
 /**
  * Called when a player is detected cheating.

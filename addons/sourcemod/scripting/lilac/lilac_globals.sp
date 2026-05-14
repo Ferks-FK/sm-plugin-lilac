@@ -67,7 +67,8 @@
 #define CVAR_AUTO_UPDATE           35
 #define CVAR_SOURCEIRC             36
 #define CVAR_DATABASE              37
-#define CVAR_MAX                   38
+#define CVAR_SPEEDHACK             38
+#define CVAR_MAX                   39
 
 #define BHOP_INDEX_MIN     0
 #define BHOP_INDEX_JUMP    1
@@ -108,6 +109,10 @@
 #define AIMBOT_FLAG_AUTOSHOOT    (1 << 1)
 #define AIMBOT_FLAG_SNAP         (1 << 2)
 #define AIMBOT_FLAG_SNAP2        (1 << 3)
+#define AIMBOT_FLAG_SMOOTH       (1 << 4) /* Monotonic convergence: counters AimStep-style evasion. */
+
+#define SPEEDHACK_BAN_MIN    5
+#define SPEEDHACK_CMD_RATIO  1.5 /* Flag if cmds/sec > tickrate * this value. */
 
 #define STRFLAG_NEWLINE          (1 << 0) /* Carriage return or Newline. */
 #define STRFLAG_WIDE_CHAR_SPAM   (1 << 1) /* Lots of wide character spam. */

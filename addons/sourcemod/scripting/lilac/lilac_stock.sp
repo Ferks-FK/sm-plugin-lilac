@@ -45,9 +45,10 @@ void lilac_warn_admins(int client, int cheat, int detections)
 		return;
 	
 	switch (cheat) {
-	case CHEAT_BHOP: { strcopy(type, sizeof(type), "Bhop"); }
-	case CHEAT_AIMBOT: { strcopy(type, sizeof(type), "Aimbot"); }
-	case CHEAT_AIMLOCK: { strcopy(type, sizeof(type), "Aimlock"); }
+	case CHEAT_BHOP:      { strcopy(type, sizeof(type), "Bhop"); }
+	case CHEAT_AIMBOT:    { strcopy(type, sizeof(type), "Aimbot"); }
+	case CHEAT_AIMLOCK:   { strcopy(type, sizeof(type), "Aimlock"); }
+	case CHEAT_SPEEDHACK: { strcopy(type, sizeof(type), "Speedhack"); }
 	/* Macros have their own warning system. */
 	default: { return; }
 	}
@@ -91,6 +92,7 @@ void lilac_reset_client(int client)
 	lilac_noisemaker_reset_client(client);
 #endif
 	lilac_aimbot_reset_client(client);
+	lilac_speedhack_reset_client(client);
 	lilac_ping_reset_client(client);
 	lilac_convar_reset_client(client);
 	lilac_lerp_reset_client(client);
@@ -266,6 +268,8 @@ void lilac_ban_client(int client, int cheat)
 		"[Little Anti-Cheat %s] %T", PLUGIN_VERSION, "ban_macro", lang); }
 	case CHEAT_NEWLINE_NAME: { Format(reason, sizeof(reason),
 		"[Little Anti-Cheat %s] %T", PLUGIN_VERSION, "ban_name_newline", lang); }
+	case CHEAT_SPEEDHACK: { Format(reason, sizeof(reason),
+		"[Little Anti-Cheat %s] Speedhack", PLUGIN_VERSION); }
 	default: return;
 	}
 
