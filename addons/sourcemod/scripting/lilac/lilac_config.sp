@@ -87,7 +87,7 @@ void lilac_config_setup()
 		"Detect Aimlock.\n0 = Disabled.\n1 = Log only.\n5 or more = ban on n'th detection (Minimum possible is 5).",
 		FCVAR_PROTECTED, true, 0.0, false, 0.0);
 	hcvar[CVAR_AIMLOCK_LIGHT] = new Convar("lilac_aimlock_light", "1",
-		"Only process at most 5 suspicious players for aimlock.\nDO NOT DISABLE THIS UNLESS YOUR SERVER CAN HANDLE IT!",
+		"Only process players who show suspicious aiming behavior for aimlock detection.\n0 = Off (all players checked).\n1 = On (only suspicious players checked, recommended).",
 		FCVAR_PROTECTED, true, 0.0, true, 1.0);
 	hcvar[CVAR_BACKTRACK_PATCH] = new Convar("lilac_backtrack_patch", "0",
 		"Patch Backtrack.\n0 = Disabled (Recommended setting for SMAC compatibility).\n1 = Enabled.",

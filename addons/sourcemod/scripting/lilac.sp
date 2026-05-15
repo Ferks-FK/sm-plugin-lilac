@@ -133,7 +133,7 @@ public void OnPluginStart()
     CreateTimer(5.0, timer_check_ping, _, TIMER_REPEAT);
     CreateTimer(5.0, timer_check_lerp, _, TIMER_REPEAT);
     CreateTimer(1.0, timer_check_speedhack, _, TIMER_REPEAT);
-    CreateTimer(0.5, timer_check_aimlock, _, TIMER_REPEAT);
+    CreateTimer(0.1, timer_check_aimlock, _, TIMER_REPEAT);
     CreateTimer(60.0 * 5.0, timer_decrement_macro, _, TIMER_REPEAT);
 
     tick_rate = RoundToNearest(1.0 / GetTickInterval());

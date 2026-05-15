@@ -16,6 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+static int aimlock_cursor = 1;
+
 static bool aimlock_skip_player(int client)
 {
 	if (!is_player_valid(client)
@@ -48,31 +50,33 @@ public Action timer_check_aimlock(Handle timer)
 {
 	float pos[3], pos2[3];
 	int players_processed = 0;
-	bool detected_aimlock[MAXPLAYERS + 1];
 
 	if (!icvar[CVAR_ENABLE] || !icvar[CVAR_AIMLOCK])
 		return Plugin_Continue;
 
-	for (int client = 1; client <= MaxClients; client++) {
-		detected_aimlock[client] = false;
+	/* Process up to 5 players per call and advance the cursor so the next
+	 * call continues from where this one stopped, covering all players
+	 * across successive calls. Light mode additionally restricts which
+	 * players are eligible via aimlock_skip_player. */
+	int batch_size = 5;
 
-		/* Don't process more than 5 players.
-		 * Note: Don't use a "break" statement here!
-		 * We need to set detected_aimlock[...] to false
-		 * on every single player!
-		 * This will then also serve as a "is_player_valid()"
-		 * for players who need to be detected for Aimlock. */
-		if (icvar[CVAR_AIMLOCK_LIGHT] == 1 && players_processed >= 5)
-			continue;
+	for (int i = 0; i < MaxClients; i++) {
+		int client = (aimlock_cursor - 1 + i) % MaxClients + 1;
+
+		if (players_processed >= batch_size) {
+			aimlock_cursor = client;
+			return Plugin_Continue;
+		}
 
 		if (aimlock_skip_player(client))
 			continue;
 
+		players_processed++;
 		GetClientEyePosition(client, pos);
 
-		players_processed++;
-
+		bool detected = false;
 		bool process = true;
+
 		for (int target = 1; process && target <= MaxClients; target++) {
 			if (aimlock_skip_target(client, target))
 				continue;
@@ -82,7 +86,7 @@ public Action timer_check_aimlock(Handle timer)
 			/* Too close to an enemy, don't report aimlock
 			 * detections and stop processing this player. */
 			if (GetVectorDistance(pos, pos2) < 300.0) {
-				detected_aimlock[client] = false;
+				detected = false;
 				process = false;
 				continue;
 			}
@@ -90,19 +94,19 @@ public Action timer_check_aimlock(Handle timer)
 			/* Player has already been detected of using aimlock,
 			 * don't check for aimlock again, only check
 			 * if the player is too close to other enemies. */
-			if (detected_aimlock[client])
+			if (detected)
 				continue;
 
 			if (is_aimlocking(client, pos, pos2))
-				detected_aimlock[client] = true;
+				detected = true;
 		}
+
+		if (detected)
+			lilac_detected_aimlock(client);
 	}
 
-	for (int i = 1; i <= MaxClients; i++) {
-		if (detected_aimlock[i])
-			lilac_detected_aimlock(i);
-	}
-
+	/* Completed a full sweep — restart cursor from the beginning. */
+	aimlock_cursor = 1;
 	return Plugin_Continue;
 }
 
@@ -237,10 +241,7 @@ void lilac_aimlock_light_test(int client)
 
 		if (i) {
 			/* This player has a somewhat big delta,
-			 * test this player for aimlock for 200 seconds.
-			 * Even if we end up flagging more than 5 players
-			 * for this, that's fine as only 5 players
-			 * can be processed in the aimlock check timer. */
+			 * test this player for aimlock for 200 seconds. */
 			if (angle_delta(lastang, ang) > 20.0) {
 				playerinfo_time_process_aimlock[client] = GetGameTime() + 200.0;
 				return;
