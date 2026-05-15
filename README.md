@@ -6,7 +6,7 @@ But, as I quit cheating and quit having servers, I decided to release this proje
 This Anti-Cheat is by no means perfect, and it is bypassable to some extent, but it should still be helpful in dealing with cheaters :)
 
 ### Current Cheat Detections:
- - Angle-Cheats (Legit Anti-Backstab (TF2), Basic Anti-Aims and Duckspeed).
+ - Angle-Cheats (Basic Anti-Aims and Duckspeed).
  - Chat-Clear (When cheaters clear the chat).
  - Basic Invalid ConVar Detector (Checks if clients have sv_cheats turned on and such).
  - BunnyHop (Bhop).
@@ -24,7 +24,6 @@ This Anti-Cheat is by no means perfect, and it is bypassable to some extent, but
  - Invalid characters in chat patch (+ chat clear exploit fix).
 
 ### Supported Games:
- - [TF2] Team Fortress 2
  - [CS:S] Counter-Strike:Source
  - [L4D2] Left 4 Dead 2
  - [L4D] Left 4 Dead
@@ -53,7 +52,7 @@ This is often done to increase their Aimbot accuracy.
 **Q: What are Angle-Cheats?**\
 A: Angle-Cheats is when a player's view angles are set beyond the limits of the game.\
 This is often done to create a desync between their model and hitbox, making it harder to shoot them.\
-It can also be done to execute some other exploits; like in TF2 with Duckspeed.
+It can also be done to execute some other exploits.
 
 Note: Lilac currently does not check for yaw, so some desyncs are still possible and not detected.
 
