@@ -4,17 +4,12 @@
 	{
 		"Version"
 		{
-			"Latest"	"1.7.4"
+			"Latest"	"1.8.0"
 		}
 
-		"Notes" "Removed the need to download other third party includes (SB, SB++, MA and Updater)."
-		"Notes" "Removed Angle checks in L4D1&2."
-		"Notes" "Added define in lilac.sp for TF2Classic support."
-		"Notes" "Added support for the old version of SourceBans."
-		"Notes" "Added admin chat warnings for suspicious players (Aimbot, Aimlock and Bhop)."
-		"Notes" "Fixed a bug where multiple aimbot checks are fired upon getting multiple kills from the same shot."
-		"Notes" "Removed custom warnings when compiling."
-		"Notes" "Updated sourcecode to compile in SM 1.11 without warnings."
+		"Notes" "TF2 support has been removed (alternative: https://github.com/sapphonie/StAC-tf2)"
+		"Notes" "Some changes to aimbot detection."
+		"Notes" "Added speedhack detection (Still in BETA)"
 	}
 
 	"Files"
@@ -45,8 +40,8 @@
 		"Source"	"Path_SM/scripting/lilac/lilac_convar.sp"
 		"Source"	"Path_SM/scripting/lilac/lilac_lerp.sp"
 		"Source"	"Path_SM/scripting/lilac/lilac_macro.sp"
-		"Source"	"Path_SM/scripting/lilac/lilac_noisemaker.sp"
 		"Source"	"Path_SM/scripting/lilac/lilac_ping.sp"
+		"Source"	"Path_SM/scripting/lilac/lilac_speedhack.sp"
 		"Source"	"Path_SM/scripting/lilac/lilac_stock.sp"
 		"Source"	"Path_SM/scripting/lilac/lilac_string.sp"
 	}

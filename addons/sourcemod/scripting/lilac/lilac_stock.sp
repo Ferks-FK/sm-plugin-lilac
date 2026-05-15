@@ -87,10 +87,6 @@ void lilac_reset_client(int client)
 	lilac_backtrack_reset_client(client);
 	lilac_bhop_reset_client(client);
 	lilac_macro_reset_client(client);
-#if !defined TF2C
-	/* Noise maker file is empty if compiled for TF2Classic. */
-	lilac_noisemaker_reset_client(client);
-#endif
 	lilac_aimbot_reset_client(client);
 	lilac_speedhack_reset_client(client);
 	lilac_ping_reset_client(client);

@@ -17,26 +17,19 @@
 */
 
 /* Uncomment below line to compile for Team Fortress 2 Classic.
- * You'll need SourceMod 1.10 and SM-TF2Clasic-Tools to compile, if you decide to.
+ * You'll need SourceMod 1.12 to compile.
  * Note: Doing so means the compiled plugin won't work correctly
  * for other source games. 
- * SourceMod 1.10: https://www.sourcemod.net/downloads.php?branch=1.10-dev
- * SM-TF2Clasic-Tools: https://github.com/tf2classic/SM-TF2Classic-Tools */
-//#define TF2C
+ * SourceMod 1.12: https://www.sourcemod.net/downloads.php?branch=1.12 */
 
 #include <sourcemod>
 #include <sdktools_engine>
 #include <sdktools_entoutput>
 #include <convar_class>
 #include <lilac>
+
 #undef REQUIRE_PLUGIN /* ... */
 #undef REQUIRE_EXTENSIONS
-#if defined TF2C
-	#include <tf2c>
-#else
-	#include <tf2>
-	#include <tf2_stocks>
-#endif
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
@@ -55,12 +48,10 @@
 #include "lilac/lilac_database.sp"
 #include "lilac/lilac_lerp.sp"
 #include "lilac/lilac_macro.sp"
-#include "lilac/lilac_noisemaker.sp"
 #include "lilac/lilac_ping.sp"
 #include "lilac/lilac_speedhack.sp"
 #include "lilac/lilac_stock.sp"
 #include "lilac/lilac_string.sp" /* String takes care of chat and names. */
-
 
 public Plugin myinfo = {
 	name = PLUGIN_NAME,
@@ -70,116 +61,93 @@ public Plugin myinfo = {
 	url = PLUGIN_URL
 };
 
+public APLRes AskPluginLoad2(Handle hMyself, bool bLate, char[] sError, int err_max)
+{
+    EngineVersion version = GetEngineVersion();
+
+    if (version == Engine_Left4Dead
+        || version == Engine_Left4Dead2
+        || version == Engine_CSS
+        || version == Engine_DODS)
+    {
+        g_bGame = version;
+
+        return APLRes_Success;
+    }
+
+    strcopy(sError, err_max, "This plugin only supports Source Engine games. If you are seeing this message, it means your game isn't supported.");
+    return APLRes_SilentFailure;
+}
 
 public void OnPluginStart()
 {
-	LoadTranslations("lilac.phrases.txt");
+    LoadTranslations("lilac.phrases.txt");
+    
+    HookEvent("player_death", event_player_death, EventHookMode_Pre);
+    HookEvent("player_spawn", event_teleported, EventHookMode_Post);
+    HookEvent("player_changename", event_namechange, EventHookMode_Post);
 
-#if defined TF2C
-	ggame = GAME_TF2;
-	/* Post inventory check isn't needed,
-	 * as noisemaker spam isn't a thing in TF2Classic. */
-	HookEvent("player_teleported", event_teleported, EventHookMode_Post);
-	HookEvent("player_death", event_player_death_tf2, EventHookMode_Pre);
-#else
-	char gamefolder[32];
-	GetGameFolderName(gamefolder, sizeof(gamefolder));
-	if (StrEqual(gamefolder, "tf", false)) {
-		ggame = GAME_TF2;
+    HookEntityOutput("trigger_teleport", "OnEndTouch", map_teleport);
 
-		HookEvent("post_inventory_application", event_inventoryupdate, EventHookMode_Post);
-		HookEvent("player_teleported", event_teleported, EventHookMode_Post);
-	}
-	else if (StrEqual(gamefolder, "cstrike", false)) {
-		ggame = GAME_CSS;
-	}
-	else if (StrEqual(gamefolder, "left4dead2", false)) {
-		ggame = GAME_L4D2;
-	}
-	else if (StrEqual(gamefolder, "left4dead", false)) {
-		ggame = GAME_L4D;
-	}
-	else if (StrEqual(gamefolder, "dod", false)) {
-		ggame = GAME_DODS;
-	}
-	else {
-		ggame = GAME_UNKNOWN;
-		PrintToServer("[Lilac] This game currently isn't supported, Little Anti-Cheat will still run, but expect some bugs and false positives/bans!");
-	}
+    /* Default ban lengths are -1. (Global ConVar). */
+    for (int i = 0; i < CHEAT_MAX; i++)
+        ban_length_overwrite[i] = -1;
 
-	if (ggame == GAME_TF2)
-		HookEvent("player_death", event_player_death_tf2, EventHookMode_Pre);
-	else
-		HookEvent("player_death", event_player_death, EventHookMode_Pre);
-#endif /* TF2C check. */
+    /* Bans for Bhop last 1 month by default. */
+    ban_length_overwrite[CHEAT_BHOP] = 24 * 30 * 60;
 
-	HookEvent("player_spawn", event_teleported, EventHookMode_Post);
-	HookEvent("player_changename", event_namechange, EventHookMode_Post);
+    /* Bans for Macros are 15 minutes by default. */
+    ban_length_overwrite[CHEAT_MACRO] = 15;
 
-	HookEntityOutput("trigger_teleport", "OnEndTouch", map_teleport);
+    /* Bans for Speedhack are permanent by default. */
+    ban_length_overwrite[CHEAT_SPEEDHACK] = 0;
 
-	/* Default ban lengths are -1. (Global ConVar). */
-	for (int i = 0; i < CHEAT_MAX; i++)
-		ban_length_overwrite[i] = -1;
+    /* If sv_maxupdaterate is changed mid-game and then this plugin
+    * is loaded, then it could lead to false positives.
+    * Reset all stats on all players already in-game, but ignore lerp.
+    * Also check players already in-game for noisemaker. */
+    for (int i = 1; i <= MaxClients; i++) {
+        lilac_reset_client(i);
+        lilac_lerp_ignore_nolerp_client(i);
+    }
 
-	/* Bans for Bhop last 1 month by default. */
-	ban_length_overwrite[CHEAT_BHOP] = 24 * 30 * 60;
+    forwardhandle = CreateGlobalForward("lilac_cheater_detected",
+        ET_Ignore, Param_Cell, Param_Cell);
+    forwardhandleban = CreateGlobalForward("lilac_cheater_banned",
+        ET_Ignore, Param_Cell, Param_Cell);
+    forwardhandleallow = CreateGlobalForward("lilac_allow_cheat_detection",
+        ET_Event, Param_Cell, Param_Cell);
 
-	/* Bans for Macros are 15 minutes by default. */
-	ban_length_overwrite[CHEAT_MACRO] = 15;
+    CreateTimer(QUERY_TIMER, timer_query, _, TIMER_REPEAT);
+    CreateTimer(5.0, timer_check_ping, _, TIMER_REPEAT);
+    CreateTimer(5.0, timer_check_lerp, _, TIMER_REPEAT);
+    CreateTimer(1.0, timer_check_speedhack, _, TIMER_REPEAT);
+    CreateTimer(0.5, timer_check_aimlock, _, TIMER_REPEAT);
+    CreateTimer(60.0 * 5.0, timer_decrement_macro, _, TIMER_REPEAT);
 
-	/* Bans for Speedhack are permanent by default. */
-	ban_length_overwrite[CHEAT_SPEEDHACK] = 0;
+    tick_rate = RoundToNearest(1.0 / GetTickInterval());
 
-	/* If sv_maxupdaterate is changed mid-game and then this plugin
-	 * is loaded, then it could lead to false positives.
-	 * Reset all stats on all players already in-game, but ignore lerp.
-	 * Also check players already in-game for noisemaker. */
-	for (int i = 1; i <= MaxClients; i++) {
-		lilac_reset_client(i);
-		lilac_lerp_ignore_nolerp_client(i);
-#if !defined TF2C
-		check_inventory_for_noisemaker(i);
-#endif
-	}
+    /* Ignore low tickrates. */
+    macro_max = (tick_rate >= 60 && tick_rate <= MACRO_LOG_LENGTH) ? 20 : 0;
 
-	forwardhandle = CreateGlobalForward("lilac_cheater_detected",
-		ET_Ignore, Param_Cell, Param_Cell);
-	forwardhandleban = CreateGlobalForward("lilac_cheater_banned",
-		ET_Ignore, Param_Cell, Param_Cell);
-	forwardhandleallow = CreateGlobalForward("lilac_allow_cheat_detection",
-		ET_Event, Param_Cell, Param_Cell);
+    if (tick_rate > 50) {
+        bhop_settings_min[BHOP_INDEX_MIN] = 5;
+        bhop_settings_min[BHOP_INDEX_MAX] = 10;
+        bhop_settings_min[BHOP_INDEX_TOTAL] = 1;
+    }
+    else {
+        bhop_settings_min[BHOP_INDEX_MIN] = 10;
+        bhop_settings_min[BHOP_INDEX_MAX] = 20;
+        bhop_settings_min[BHOP_INDEX_TOTAL] = 3;
+    }
+    bhop_settings_min[BHOP_INDEX_JUMP] = -1;
+    bhop_settings_min[BHOP_INDEX_AIR] = 0;
 
-	CreateTimer(QUERY_TIMER, timer_query, _, TIMER_REPEAT);
-	CreateTimer(5.0, timer_check_ping, _, TIMER_REPEAT);
-	CreateTimer(5.0, timer_check_lerp, _, TIMER_REPEAT);
-	CreateTimer(1.0, timer_check_speedhack, _, TIMER_REPEAT);
-	CreateTimer(0.5, timer_check_aimlock, _, TIMER_REPEAT);
-	CreateTimer(60.0 * 5.0, timer_decrement_macro, _, TIMER_REPEAT);
+    /* This sets up convars and such. */
+    lilac_config_setup();
 
-	tick_rate = RoundToNearest(1.0 / GetTickInterval());
-
-	/* Ignore low tickrates. */
-	macro_max = (tick_rate >= 60 && tick_rate <= MACRO_LOG_LENGTH) ? 20 : 0;
-
-	if (tick_rate > 50) {
-		bhop_settings_min[BHOP_INDEX_MIN] = 5;
-		bhop_settings_min[BHOP_INDEX_MAX] = 10;
-		bhop_settings_min[BHOP_INDEX_TOTAL] = 1;
-	}
-	else {
-		bhop_settings_min[BHOP_INDEX_MIN] = 10;
-		bhop_settings_min[BHOP_INDEX_MAX] = 20;
-		bhop_settings_min[BHOP_INDEX_TOTAL] = 3;
-	}
-	bhop_settings_min[BHOP_INDEX_JUMP] = -1;
-	bhop_settings_min[BHOP_INDEX_AIR] = 0;
-
-	/* This sets up convars and such. */
-	lilac_config_setup();
-
-	if (icvar[CVAR_LOG])
-		lilac_log_first_time_setup();
+    if (icvar[CVAR_LOG])
+        lilac_log_first_time_setup();
 }
 
 public void OnAllPluginsLoaded()
@@ -264,14 +232,6 @@ public void OnClientPutInServer(int client)
 	CreateTimer(30.0, timer_welcome, GetClientUserId(client));
 }
 
-public void TF2_OnConditionRemoved(int client, TFCond condition)
-{
-	if (condition == TFCond_Taunting)
-		playerinfo_time_teleported[client] = GetGameTime();
-	else if (condition == TFCond_HalloweenKart)
-		playerinfo_time_bumpercart[client] = GetGameTime();
-}
-
 public Action event_teleported(Event event, const char[] name, bool dontBroadcast)
 {
 	int client = GetClientOfUserId(GetEventInt(event, "userid", -1));
@@ -304,53 +264,54 @@ public Action timer_welcome(Handle timer, int userid)
 }
 
 public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3],
-				float angles[3], int& weapon, int& subtype, int& cmdnum,
-				int& tickcount, int& seed, int mouse[2])
+                float angles[3], int& weapon, int& subtype, int& cmdnum,
+                int& tickcount, int& seed, int mouse[2])
 {
-	static int lbuttons[MAXPLAYERS + 1];
+    static int lbuttons[MAXPLAYERS + 1];
 
-	if (!is_player_valid(client) || IsFakeClient(client))
-		return Plugin_Continue;
+    if (!is_player_valid(client) || IsFakeClient(client))
+        return Plugin_Continue;
 
-	/* Increment the index. */
-	if (++playerinfo_index[client] >= CMD_LENGTH)
-		playerinfo_index[client] = 0;
+    /* Increment the index. */
+    if (++playerinfo_index[client] >= CMD_LENGTH)
+        playerinfo_index[client] = 0;
 
-	/* Store when the tick was processed. */
-	playerinfo_time_usercmd[client][playerinfo_index[client]] = GetGameTime();
+    /* Store when the tick was processed. */
+    playerinfo_time_usercmd[client][playerinfo_index[client]] = GetGameTime();
 
-	/* Store information. */
-	lilac_backtrack_store_tickcount(client, tickcount);
-	set_player_log_angles(client, angles, playerinfo_index[client]);
-	playerinfo_buttons[client][playerinfo_index[client]] = buttons;
-	playerinfo_actions[client][playerinfo_index[client]] = 0;
+    /* Store information. */
+    lilac_backtrack_store_tickcount(client, tickcount);
+    set_player_log_angles(client, angles, playerinfo_index[client]);
+    playerinfo_buttons[client][playerinfo_index[client]] = buttons;
+    playerinfo_actions[client][playerinfo_index[client]] = 0;
 
-	if ((buttons & IN_ATTACK) && bullettime_can_shoot(client))
-		playerinfo_actions[client][playerinfo_index[client]] |= ACTION_SHOT;
+    if ((buttons & IN_ATTACK) && bullettime_can_shoot(client))
+        playerinfo_actions[client][playerinfo_index[client]] |= ACTION_SHOT;
 
-	if (icvar[CVAR_ENABLE]) {
-		/* Detect Angle-Cheats. */
-		if (icvar[CVAR_ANGLES])
-			lilac_angles_check(client, angles);
+    if (icvar[CVAR_ENABLE]) {
+        /* Detect Angle-Cheats. */
+        /* Only check for angles in CSS and DoD:S */
+        if (icvar[CVAR_ANGLES] && (g_bGame == Engine_CSS || g_bGame == Engine_DODS))
+            lilac_angles_check(client, angles);
 
-		/* Detect Macros. */
-		if (macro_max && icvar[CVAR_MACRO])
-			lilac_macro_check(client, buttons, lbuttons[client]);
+        /* Detect Macros. */
+        if (macro_max && icvar[CVAR_MACRO])
+            lilac_macro_check(client, buttons, lbuttons[client]);
 
-		/* Detect bhop. */
-		if (!force_disable_bhop && icvar[CVAR_BHOP])
-			lilac_bhop_check(client, buttons, lbuttons[client]);
+        /* Detect bhop. */
+        if (!force_disable_bhop && icvar[CVAR_BHOP])
+            lilac_bhop_check(client, buttons, lbuttons[client]);
 
-		/* Patch Angle-Cheats. */
-		if (icvar[CVAR_PATCH_ANGLES])
-			lilac_angles_patch(angles);
+        /* Patch Angle-Cheats. */
+        if (icvar[CVAR_PATCH_ANGLES])
+            lilac_angles_patch(angles);
 
-		/* Patch Backtracking. */
-		if (icvar[CVAR_BACKTRACK_PATCH])
-			tickcount = lilac_backtrack_patch(client, tickcount);
-	}
+        /* Patch Backtracking. */
+        if (icvar[CVAR_BACKTRACK_PATCH])
+            tickcount = lilac_backtrack_patch(client, tickcount);
+    }
 
-	lbuttons[client] = buttons;
+    lbuttons[client] = buttons;
 
-	return Plugin_Continue;
+    return Plugin_Continue;
 }

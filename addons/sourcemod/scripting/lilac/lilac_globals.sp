@@ -17,17 +17,9 @@
 */
 
 #define NATIVE_EXISTS(%0)   (GetFeatureStatus(FeatureType_Native, %0) == FeatureStatus_Available)
-#define UPDATE_URL          "https://raw.githubusercontent.com/srcdslab/sm-plugin-lilac/refs/heads/master/updatefile.txt"
+#define UPDATE_URL          "https://raw.githubusercontent.com/Ferks-FK/sm-plugin-lilac/refs/heads/master/updatefile.txt"
 
 #define CMD_LENGTH   330
-
-#define GAME_UNKNOWN   0
-#define GAME_TF2       1
-#define GAME_CSS       2
-// #define GAME_CSGO      3 /* Deprecated - Unsupported game */
-#define GAME_DODS      4
-#define GAME_L4D2      5
-#define GAME_L4D       6
 
 #define CVAR_ENABLE                 0
 #define CVAR_WELCOME                1
@@ -51,7 +43,7 @@
 #define CVAR_AIMBOT_AUTOSHOOT      19
 #define CVAR_AIMLOCK               20
 #define CVAR_AIMLOCK_LIGHT         21
-#define CVAR_NOISEMAKER_SPAM       22
+// #define CVAR_NOISEMAKER_SPAM       22
 #define CVAR_BACKTRACK_PATCH       23
 #define CVAR_BACKTRACK_TOLERANCE   24
 #define CVAR_MAX_PING              25
@@ -84,10 +76,6 @@
 #define BHOP_MODE_LOW          4
 #define BHOP_MODE_MEDIUM       5
 #define BHOP_MODE_HIGH         6
-
-#define NOISEMAKER_TYPE_NONE        0
-#define NOISEMAKER_TYPE_LIMITED     1
-#define NOISEMAKER_TYPE_UNLIMITED   2
 
 #define MACRO_LOG_LENGTH   200
 
@@ -122,7 +110,7 @@
 #define DATABASE_LOG_ONLY -2
 
 #define PLUGIN_NAME      "[Lilac] Little Anti-Cheat"
-#define PLUGIN_AUTHOR    "J_Tanzanite"
+#define PLUGIN_AUTHOR    "J_Tanzanite, Ferks-FK"
 #define PLUGIN_DESC      "An opensource Anti-Cheat"
 #define PLUGIN_VERSION   "1.8.0"
 #define PLUGIN_URL       "https://github.com/J-Tanzanite/Little-Anti-Cheat"
@@ -143,7 +131,7 @@ char sql_buffer[1500]; /* It's probably bigger than what you need, but better be
 char db_name[64]; /* Database config name from hcvar[CVAR_DATABASE]. */
 
 /* Misc. */
-int ggame;
+bool g_bGame;
 int tick_rate;
 int macro_max;
 int bhop_settings[BHOP_MAX];

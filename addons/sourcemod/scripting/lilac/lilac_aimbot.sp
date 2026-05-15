@@ -68,42 +68,6 @@ public Action event_player_death(Event event, const char[] name, bool dontBroadc
 	return Plugin_Continue;
 }
 
-public Action event_player_death_tf2(Event event, const char[] name, bool dontBroadcast)
-{
-	char wep[64];
-	int userid, client, victim, killtype;
-
-	if (!icvar[CVAR_ENABLE])
-		return Plugin_Continue;
-
-
-	victim = GetClientOfUserId(GetEventInt(event, "userid", -1));
-
-	if (!is_player_valid(victim))
-		return Plugin_Continue;
-	
-	GetEventString(event, "weapon_logclassname", wep, sizeof(wep), "");
-
-	/* Ignore sentries & world in TF2. */
-	if (!strncmp(wep, "obj_", 4, false) || !strncmp(wep, "world", 5, false))
-		return Plugin_Continue;
-
-	userid = GetEventInt(event, "attacker", -1);
-	client = GetClientOfUserId(userid);
-	killtype = GetEventInt(event, "customkill", 0);
-
-	/* Same as above, prevent multiple aimbot checks on the same tick. */
-	if (is_player_valid(client) && aimbot_timertick[client] == GetGameTickCount())
-		return Plugin_Continue;
-
-	/* killtype 3 == flamethrower,
-	 * ignore snap detections as pyros sometimes,
-	 * sway their aim around. */
-	event_death_shared(userid, client, victim, ((killtype == 3) ? true : false));
-
-	return Plugin_Continue;
-}
-
 void event_death_shared(int userid, int client, int victim, bool skip_delta)
 {
 	DataPack pack;

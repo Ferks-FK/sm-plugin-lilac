@@ -89,9 +89,6 @@ void lilac_config_setup()
 	hcvar[CVAR_AIMLOCK_LIGHT] = new Convar("lilac_aimlock_light", "1",
 		"Only process at most 5 suspicious players for aimlock.\nDO NOT DISABLE THIS UNLESS YOUR SERVER CAN HANDLE IT!",
 		FCVAR_PROTECTED, true, 0.0, true, 1.0);
-	hcvar[CVAR_NOISEMAKER_SPAM] = new Convar("lilac_noisemaker", "1",
-		"TF2 Only, detect infinite noisemaker spam. STILL IN BETA, DOES NOT BAN, ONLY LOGS! MAY HAVE SOME ISSUES!\n-1 = Log only.\n0 = Disabled.\n1 = Enabled.",
-		FCVAR_PROTECTED, true, -1.0, true, 1.0);
 	hcvar[CVAR_BACKTRACK_PATCH] = new Convar("lilac_backtrack_patch", "0",
 		"Patch Backtrack.\n0 = Disabled (Recommended setting for SMAC compatibility).\n1 = Enabled.",
 		FCVAR_PROTECTED, true, 0.0, true, 1.0);

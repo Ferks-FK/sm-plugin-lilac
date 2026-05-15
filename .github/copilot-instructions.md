@@ -4,7 +4,7 @@
 This repository contains **Lilac (Little Anti-Cheat)**, a free and open-source anti-cheat system for Source engine games, built as a SourcePawn plugin for SourceMod. Lilac provides real-time detection of various cheats including aimbots, angle exploits, bunnyhopping, chat clearing, and more across multiple Source engine games.
 
 **Primary Purpose**: Real-time cheat detection and automated banning for Source game servers
-**Target Games**: Team Fortress 2, Counter-Strike: Source, Left 4 Dead 2, Left 4 Dead, Day of Defeat: Source
+**Target Games**: Counter-Strike: Source, Left 4 Dead 2, Left 4 Dead, Day of Defeat: Source
 
 ## Technical Environment
 
@@ -18,7 +18,7 @@ This repository contains **Lilac (Little Anti-Cheat)**, a free and open-source a
 ### Development Dependencies
 - SourceMod 1.11+ development headers
 - SourceKnight build tools (handles dependency management)
-- Game-specific includes (TF2, CS:S, L4D2, etc.)
+- Game-specific includes (CS:S, L4D2, L4D, DODS, etc.)
 
 ## Architecture & Structure
 
@@ -43,8 +43,8 @@ addons/sourcemod/scripting/
     ├── lilac_convar.sp        # ConVar validation
     ├── lilac_lerp.sp          # Interpolation exploit detection
     ├── lilac_macro.sp         # Macro/automation detection
-    ├── lilac_noisemaker.sp    # Noisemaker spam detection (TF2)
     ├── lilac_ping.sp          # High ping kicking
+    ├── lilac_speedhack.sp     # Speedhack detection
     ├── lilac_string.sp        # Chat/name validation
     └── lilac_stock.sp         # Utility functions
 ```
@@ -166,7 +166,7 @@ playerMap.Clear(); // Don't use this!
 
 ### Testing Requirements
 - **False positive testing**: Use legitimate gameplay scenarios
-- **Cross-game compatibility**: Test on TF2, CS:S, L4D2, etc.
+- **Cross-game compatibility**: Test on CS:S, L4D2, L4D, DODS, etc.
 - **Performance profiling**: Monitor tick rate impact during heavy gameplay
 - **Database stress testing**: Verify async operations under load
 
