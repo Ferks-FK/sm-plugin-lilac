@@ -402,7 +402,13 @@ bool skip_due_to_loss(int client)
 	/* Debate: What percentage should this be at?
 	 * Skip detection if the loss is more than 50% */
 	if (icvar[CVAR_LOSS_FIX])
-		return GetClientAvgLoss(client, NetFlow_Both) > 0.5;
+        if (GetClientAvgLoss(client, NetFlow_Both) > 0.5)
+            return true;
+		
+        // High Choke incoming can cause bursts of usercmds
+        // that trigger false positives in the speedhack detector
+        if (GetClientAvgChoke(client, NetFlow_Incoming) > 0.5)
+            return true;
 
 	return false;
 }
