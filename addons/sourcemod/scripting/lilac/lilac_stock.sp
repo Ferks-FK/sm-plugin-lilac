@@ -402,6 +402,7 @@ bool skip_due_to_loss(int client)
     /* Debate: What percentage should this be at?
     * Skip detection if the loss is more than 50% */
     if (icvar[CVAR_LOSS_FIX])
+    {
         if (GetClientAvgLoss(client, NetFlow_Both) > 0.5)
             return true;
         
@@ -410,6 +411,7 @@ bool skip_due_to_loss(int client)
         if (player_avg_choke[client] > 0.3
             && GetClientAvgChoke(client, NetFlow_Incoming) > 0.2)
             return true;
+    }
 
     return false;
 }
