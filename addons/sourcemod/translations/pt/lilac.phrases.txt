@@ -72,12 +72,12 @@
 
 	"chat_invalid_characters"
 	{
-		"pt" 		"A sua mensagem na janela de conversa foi bloqueada por conter caracteres inválidos."
+		"pt" 		"A sua mensagem foi bloqueada por conter caracteres inválidos."
 	}
 
 	"chat_wide_char_spam"
 	{
-		"pt"		"A sua mensagem na janela de conversa foi bloqueada por conter caracteres de spam espaçosos."
+		"pt"		"A sua mensagem foi bloqueada por conter caracteres de spam espaçosos."
 	}
 
 	"kick_bad_name"
