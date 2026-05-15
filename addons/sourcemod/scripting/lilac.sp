@@ -65,12 +65,24 @@ public APLRes AskPluginLoad2(Handle hMyself, bool bLate, char[] sError, int err_
 {
     EngineVersion version = GetEngineVersion();
 
-    if (version == Engine_Left4Dead
-        || version == Engine_Left4Dead2
-        || version == Engine_CSS
-        || version == Engine_DODS)
+    if (version == Engine_Left4Dead || version == Engine_Left4Dead2 || version == Engine_CSS || version == Engine_DODS)
     {
         g_bGame = version;
+
+        RegPluginLibrary("lilac");
+
+        CreateNative("lilac_GetDetectedInfos", lilac_native_get_detected_infos);
+
+        /* Been told this isn't needed, but just in case. */
+        MarkNativeAsOptional("SBBanPlayer");
+        MarkNativeAsOptional("SBPP_BanPlayer");
+        MarkNativeAsOptional("MABanPlayer");
+        MarkNativeAsOptional("Updater_AddPlugin");
+        MarkNativeAsOptional("Updater_RemovePlugin");
+        MarkNativeAsOptional("IRC_MsgFlaggedChannels");
+
+        /* Build the log path for the file in case the user has overridden sm_basepath. */
+        BuildPath(Path_SM, log_file, sizeof(log_file), "logs/lilac.log");
 
         return APLRes_Success;
     }
@@ -104,8 +116,7 @@ public void OnPluginStart()
 
     /* If sv_maxupdaterate is changed mid-game and then this plugin
     * is loaded, then it could lead to false positives.
-    * Reset all stats on all players already in-game, but ignore lerp.
-    * Also check players already in-game for noisemaker. */
+    * Reset all stats on all players already in-game, but ignore lerp. */
     for (int i = 1; i <= MaxClients; i++) {
         lilac_reset_client(i);
         lilac_lerp_ignore_nolerp_client(i);
@@ -161,25 +172,6 @@ public void OnAllPluginsLoaded()
 
 	/* Startup message. */
 	PrintToServer("[Little Anti-Cheat %s] Successfully loaded!", PLUGIN_VERSION);
-}
-
-public APLRes AskPluginLoad2(Handle hMyself, bool bLate, char[] sError, int err_max)
-{
-	RegPluginLibrary("lilac");
-
-	CreateNative("lilac_GetDetectedInfos", lilac_native_get_detected_infos);
-
-	/* Been told this isn't needed, but just in case. */
-	MarkNativeAsOptional("SBBanPlayer");
-	MarkNativeAsOptional("SBPP_BanPlayer");
-	MarkNativeAsOptional("MABanPlayer");
-	MarkNativeAsOptional("Updater_AddPlugin");
-	MarkNativeAsOptional("Updater_RemovePlugin");
-	MarkNativeAsOptional("IRC_MsgFlaggedChannels");
-
-	/* Build the log path for the file in case the user has overridden sm_basepath. */
-	BuildPath(Path_SM, log_file, sizeof(log_file), "logs/lilac.log");
-	return APLRes_Success;
 }
 
 public void OnLibraryAdded(const char []name)
