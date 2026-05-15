@@ -17,11 +17,11 @@
 */
 
 static int speedhack_detection[MAXPLAYERS + 1];
-static float player_avg_choke[MAXPLAYERS + 1];
+float player_avg_choke[MAXPLAYERS + 1];
 
 void lilac_speedhack_reset_client(int client)
 {
-	speedhack_detection[client] = 0;
+    speedhack_detection[client] = 0;
     player_avg_choke[client] = 0.0;
 }
 
