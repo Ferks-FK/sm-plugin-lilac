@@ -406,6 +406,7 @@ public Action lilac_set_ban_length(int args)
 		PrintToServer("\tlilac_set_ban_length aimbot <minutes>");
 		PrintToServer("\tlilac_set_ban_length aimlock <minutes>");
 		PrintToServer("\tlilac_set_ban_length macro <minutes>");
+		PrintToServer("\tlilac_set_ban_length speedhack <minutes>");
 		PrintToServer("\tlilac_set_ban_length name <minutes>\n");
 
 		return Plugin_Handled;
@@ -436,6 +437,9 @@ public Action lilac_set_ban_length(int args)
 	}
 	else if (StrEqual(feature, "macro", false)) {
 		index = CHEAT_MACRO;
+	}
+	else if (StrEqual(feature, "speedhack", false)) {
+		index = CHEAT_SPEEDHACK;
 	}
 	else if (StrEqual(feature, "name", false) || StrEqual(feature, "filter", false)) {
 		index = CHEAT_NEWLINE_NAME;
@@ -471,6 +475,7 @@ public Action lilac_set_ban_length(int args)
 		case CHEAT_AIMBOT: strcopy(cheat_name, sizeof(cheat_name), "Aimbot");
 		case CHEAT_AIMLOCK: strcopy(cheat_name, sizeof(cheat_name), "Aimlock");
 		case CHEAT_MACRO: strcopy(cheat_name, sizeof(cheat_name), "Macro");
+        case CHEAT_SPEEDHACK: strcopy(cheat_name, sizeof(cheat_name), "Speedhack");
 		case CHEAT_NEWLINE_NAME: strcopy(cheat_name, sizeof(cheat_name), "Newline Name");
 		default: strcopy(cheat_name, sizeof(cheat_name), "Unknown");
 	}
@@ -533,6 +538,10 @@ public Action lilac_get_bans_length(int args)
 	effective_length = (ban_length_overwrite[CHEAT_NEWLINE_NAME] <= -1) ? icvar[CVAR_BAN_LENGTH] : ban_length_overwrite[CHEAT_NEWLINE_NAME];
 	PrintToServer("Newline Name        : %-13d : %d", ban_length_overwrite[CHEAT_NEWLINE_NAME], effective_length);
 
+	// Speedhack
+	effective_length = (ban_length_overwrite[CHEAT_SPEEDHACK] <= -1) ? icvar[CVAR_BAN_LENGTH] : ban_length_overwrite[CHEAT_SPEEDHACK];
+	PrintToServer("Speedhack           : %-13d : %d", ban_length_overwrite[CHEAT_SPEEDHACK], effective_length);
+
 	PrintToServer("");
 	PrintToServer("Global ConVar 'lilac_ban_length' = %d minutes", icvar[CVAR_BAN_LENGTH]);
 	PrintToServer("(0 = permanent ban)");
@@ -577,28 +586,28 @@ public void cvar_change(ConVar convar, const char[] oldValue, const char[] newVa
 
 	/* Thanks to MAGNAT2645 for informing me I could do this! */
 	if (convar == hcvar[CVAR_ENABLE]) {
-		icvar[CVAR_ENABLE] = StringToInt(newValue, 10);
+		icvar[CVAR_ENABLE] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_WELCOME]) {
-		icvar[CVAR_WELCOME] = StringToInt(newValue, 10);
+		icvar[CVAR_WELCOME] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_SB]) {
-		icvar[CVAR_SB] = StringToInt(newValue, 10);
+		icvar[CVAR_SB] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_MA]) {
-		icvar[CVAR_MA] = StringToInt(newValue, 10);
+		icvar[CVAR_MA] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_SOURCEIRC]) {
-		icvar[CVAR_SOURCEIRC] = StringToInt(newValue, 10);
+		icvar[CVAR_SOURCEIRC] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_LOG]) {
-		icvar[CVAR_LOG] = StringToInt(newValue, 10);
+		icvar[CVAR_LOG] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_LOG_EXTRA]) {
-		icvar[CVAR_LOG_EXTRA] = StringToInt(newValue, 10);
+		icvar[CVAR_LOG_EXTRA] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_LOG_MISC]) {
-		icvar[CVAR_LOG_MISC] = StringToInt(newValue, 10);
+		icvar[CVAR_LOG_MISC] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_LOG_DATE]) {
 		lilac_setup_date_format(newValue);
@@ -607,82 +616,82 @@ public void cvar_change(ConVar convar, const char[] oldValue, const char[] newVa
 		PrintToServer("Date Format Preview: %s", testdate);
 	}
 	else if (convar == hcvar[CVAR_BAN]) {
-		icvar[CVAR_BAN] = StringToInt(newValue, 10);
+		icvar[CVAR_BAN] = StringToInt(newValue);
 
 		if (!icvar[CVAR_BAN])
 			PrintToServer("[Little Anti-Cheat %s] WARNING: 'lilac_ban' has been set to 0, banning of cheaters has been disabled.", PLUGIN_VERSION);
 	}
 	else if (convar == hcvar[CVAR_BAN_LENGTH]) {
-		icvar[CVAR_BAN_LENGTH] = StringToInt(newValue, 10);
+		icvar[CVAR_BAN_LENGTH] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_BAN_LANGUAGE]) {
-		icvar[CVAR_BAN_LANGUAGE] = StringToInt(newValue, 10);
+		icvar[CVAR_BAN_LANGUAGE] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_CHEAT_WARN]) {
-		icvar[CVAR_CHEAT_WARN] = StringToInt(newValue, 10);
+		icvar[CVAR_CHEAT_WARN] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_ANGLES]) {
-		icvar[CVAR_ANGLES] = StringToInt(newValue, 10);
+		icvar[CVAR_ANGLES] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_PATCH_ANGLES]) {
-		icvar[CVAR_PATCH_ANGLES] = StringToInt(newValue, 10);
+		icvar[CVAR_PATCH_ANGLES] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_CHAT]) {
-		icvar[CVAR_CHAT] = StringToInt(newValue, 10);
+		icvar[CVAR_CHAT] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_CONVAR]) {
-		icvar[CVAR_CONVAR] = StringToInt(newValue, 10);
+		icvar[CVAR_CONVAR] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_NOLERP]) {
-		icvar[CVAR_NOLERP] = StringToInt(newValue, 10);
+		icvar[CVAR_NOLERP] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_BHOP]) {
-		icvar[CVAR_BHOP] = StringToInt(newValue, 10);
+		icvar[CVAR_BHOP] = StringToInt(newValue);
 		lilac_bhop_set_preset();
 	}
 	else if (convar == hcvar[CVAR_AIMBOT]) {
-		icvar[CVAR_AIMBOT] = StringToInt(newValue, 10);
+		icvar[CVAR_AIMBOT] = StringToInt(newValue);
 		
 		if (icvar[CVAR_AIMBOT] > 1 &&
 			icvar[CVAR_AIMBOT] < AIMBOT_BAN_MIN)
 			icvar[CVAR_AIMBOT] = 5;
 	}
 	else if (convar == hcvar[CVAR_AIMBOT_AUTOSHOOT]) {
-		icvar[CVAR_AIMBOT_AUTOSHOOT] = StringToInt(newValue, 10);
+		icvar[CVAR_AIMBOT_AUTOSHOOT] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_AIMLOCK]) {
-		icvar[CVAR_AIMLOCK] = StringToInt(newValue, 10);
+		icvar[CVAR_AIMLOCK] = StringToInt(newValue);
 		
 		if (icvar[CVAR_AIMLOCK] > 1
 			&& icvar[CVAR_AIMLOCK] < AIMLOCK_BAN_MIN)
 			icvar[CVAR_AIMLOCK] = 5;
 	}
 	else if (convar == hcvar[CVAR_AIMLOCK_LIGHT]) {
-		icvar[CVAR_AIMLOCK_LIGHT] = StringToInt(newValue, 10);
+		icvar[CVAR_AIMLOCK_LIGHT] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_BACKTRACK_PATCH]) {
-		icvar[CVAR_BACKTRACK_PATCH] = StringToInt(newValue, 10);
+		icvar[CVAR_BACKTRACK_PATCH] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_BACKTRACK_TOLERANCE]) {
-		icvar[CVAR_BACKTRACK_TOLERANCE] = StringToInt(newValue, 10);
+		icvar[CVAR_BACKTRACK_TOLERANCE] = StringToInt(newValue);
 		
 		if (icvar[CVAR_BACKTRACK_TOLERANCE] > 2)
 			PrintToServer("[Little Anti-Cheat %s] WARNING: It is not recommeded to set backtrack tolerance above 2, only do this if you understand what this means.", PLUGIN_VERSION);
 	}
 	else if (convar == hcvar[CVAR_MAX_PING]) {
-		icvar[CVAR_MAX_PING] = StringToInt(newValue, 10);
+		icvar[CVAR_MAX_PING] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_MAX_PING_SPEC]) {
-		icvar[CVAR_MAX_PING_SPEC] = StringToInt(newValue, 10);
+		icvar[CVAR_MAX_PING_SPEC] = StringToInt(newValue);
 		
 		if (icvar[CVAR_MAX_PING_SPEC] < 30)
 			icvar[CVAR_MAX_PING_SPEC] = 0;
 	}
 	else if (convar == hcvar[CVAR_MAX_LERP]) {
-		icvar[CVAR_MAX_LERP] = StringToInt(newValue, 10);
+		icvar[CVAR_MAX_LERP] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_MACRO]) {
-		icvar[CVAR_MACRO] = StringToInt(newValue, 10);
+		icvar[CVAR_MACRO] = StringToInt(newValue);
 
 		if (icvar[CVAR_MACRO] > 0)
 			PrintToServer("[Little Anti-Cheat %s] WARNING: It's recommended to use log-only method for now.", PLUGIN_VERSION);
@@ -692,25 +701,25 @@ public void cvar_change(ConVar convar, const char[] oldValue, const char[] newVa
 			lilac_macro_reset_client(i);
 	}
 	else if (convar == hcvar[CVAR_MACRO_WARNING]) {
-		icvar[CVAR_MACRO_WARNING] = StringToInt(newValue, 10);
+		icvar[CVAR_MACRO_WARNING] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_MACRO_DEAL_METHOD]) {
-		icvar[CVAR_MACRO_DEAL_METHOD] = StringToInt(newValue, 10);
+		icvar[CVAR_MACRO_DEAL_METHOD] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_MACRO_MODE]) {
-		icvar[CVAR_MACRO_MODE] = StringToInt(newValue, 10);
+		icvar[CVAR_MACRO_MODE] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_FILTER_NAME]) {
-		icvar[CVAR_FILTER_NAME] = StringToInt(newValue, 10);
+		icvar[CVAR_FILTER_NAME] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_FILTER_CHAT]) {
-		icvar[CVAR_FILTER_CHAT] = StringToInt(newValue, 10);
+		icvar[CVAR_FILTER_CHAT] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_LOSS_FIX]) {
-		icvar[CVAR_LOSS_FIX] = StringToInt(newValue, 10);
+		icvar[CVAR_LOSS_FIX] = StringToInt(newValue);
 	}
 	else if (convar == hcvar[CVAR_AUTO_UPDATE]) {
-		icvar[CVAR_AUTO_UPDATE] = StringToInt(newValue, 10);
+		icvar[CVAR_AUTO_UPDATE] = StringToInt(newValue);
 		
 		lilac_update_url();
 	}
@@ -721,7 +730,7 @@ public void cvar_change(ConVar convar, const char[] oldValue, const char[] newVa
 		convar.GetName(cvarname, sizeof(cvarname));
 		
 		if (StrEqual(cvarname, "sv_autobunnyhopping", false)) {
-			force_disable_bhop = StringToInt(newValue, 10);
+			force_disable_bhop = StringToInt(newValue);
 		}
 		else if (StrEqual(cvarname, "sv_maxupdaterate", false)) {
 			/* NoLerp checks need to know this value. */
@@ -769,7 +778,6 @@ static void lilac_bhop_set_preset()
 		 * Makes me miss C :( */
 		if (mode == BHOP_MODE_CUSTOM) {
 			PrintToServer("[Lilac] WARNING: DO NOT USE CUSTOM BHOP MODE UNLESS YOU KNOW WHAT YOU ARE DOING!");
-			PrintToServer("[Lilac] ВНИМАНИЕ: НЕ ИСПОЛЬЗУЙТЕ ПОЛЬЗОВАТЕЛЬСКИЙ РЕЖИМ BHOP, ЕСЛИ ВЫ НЕ ЗНАЕТЕ, ЧТО ВЫ ДЕЛАЕТЕ!");
 		}
 
 		/* Most of these clamps aren't necessary,
