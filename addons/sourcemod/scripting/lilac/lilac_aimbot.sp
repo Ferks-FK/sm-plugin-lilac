@@ -95,7 +95,6 @@ void event_death_shared(int userid, int client, int victim, bool skip_delta)
 	GetClientEyePosition(client, killpos);
 	GetClientEyePosition(victim, deathpos);
 
-	/* Killer and victim are too close to each other, skip some detections. */
 	if (GetVectorDistance(killpos, deathpos) < 350.0 || skip_delta)
 		skip_snap = 1;
 
@@ -129,6 +128,10 @@ public Action timer_check_aimbot(Handle timer, DataPack pack)
     bool skip_repeat = false;
     int converge_ticks = 0;
     int total_analysis_ticks = 0;
+    float conv_delta_sum  = 0.0;
+    float conv_delta_sq   = 0.0;
+    int   conv_delta_n    = 0;
+    bool  conv_streak_active = true;
 
     pack.Reset();
     client = GetClientOfUserId(pack.ReadCell());
@@ -147,17 +150,12 @@ public Action timer_check_aimbot(Handle timer, DataPack pack)
 
     /* Locate when the shot was fired. */
     ind = playerinfo_index[client];
-    /* 0.5 (datapacktimer delay) + 0.5 (snap test) + 0.1 (buffer).
-    * We are looking this far back in case of a projectile aimbot shot,
-    * as the death event happens way later after the shot. */
     for (int i = 0; i < CMD_LENGTH - time_to_ticks(0.5 + 0.5 + 0.1); i++) {
         ind = wrap_index(ind - 1);
 
-        /* The shot needs to have happened at least 0.3 seconds ago. */
         if (GetGameTime() - playerinfo_time_usercmd[client][ind] < 0.3)
             continue;
 
-        // The shot needs to have happened within 2 seconds. This is to prevent detecting shots from a previous life, which can happen with projectile aimbots.
         if (GetGameTime() - playerinfo_time_usercmd[client][ind] > 2.0)
             break;
 
@@ -171,10 +169,6 @@ public Action timer_check_aimbot(Handle timer, DataPack pack)
     if (shotindex == -1) {
         shotindex = fallback;
 
-        /* If the latest index is the same as the fallback, then no
-        * more usercmds have been processed since the death event.
-        * These detections are thus unstable and will be ignored
-        * (They require at least one tick after the shot to work). */
         if (playerinfo_index[client] == fallback) {
             skip_autoshoot = true;
             skip_repeat = true;
@@ -185,18 +179,13 @@ public Action timer_check_aimbot(Handle timer, DataPack pack)
         playerinfo_actions[client][shotindex] = 0;
     }
 
-    /* Skip repeat detections if players are too close to each other. */
     if (skip_snap)
         skip_repeat = true;
 
-    /* Player taunted within 0.5 seconds
-    * of taking a shot leading to a kill.
-    * Ignore snap detections. */
     float timeDiff = playerinfo_time_usercmd[client][shotindex] - playerinfo_time_teleported[client];
     if (-0.1 < timeDiff && timeDiff < 0.5 + 0.1)
         skip_snap = true;
 
-    /* Re-propagate: teleport check above may have set skip_snap after the first propagation. */
     if (skip_snap)
         skip_repeat = true;
 
@@ -232,26 +221,43 @@ public Action timer_check_aimbot(Handle timer, DataPack pack)
                 if (aimdist < laimdist * 0.1 && tdelta > 5.0)
                     detected |= AIMBOT_FLAG_SNAP2;
 
-                /* Track monotonic convergence toward target (for AimStep smooth detection). */
                 total_analysis_ticks++;
                 if (laimdist > aimdist)
                     converge_ticks++;
+
+                if (conv_streak_active) {
+                    if (tdelta > 0.5 && laimdist > aimdist) {
+                        conv_delta_sum += tdelta;
+                        conv_delta_sq  += tdelta * tdelta;
+                        conv_delta_n++;
+                    } else if (tdelta > 0.5) {
+                        conv_streak_active = false;
+                    }
+                }
             }
 
             lang = ang;
             aimdist = laimdist;
         }
 
-        /* Smooth convergence: >= 88% of pre-shot ticks showed aim closing in on target,
-        * and the shot landed within 5 degrees of the ideal direction.
-        * This catches AimStep-style evasion (4 deg/frame cap) invisible to per-tick checks. */
+        /* Monotonic convergence check. */
         if (total_analysis_ticks >= time_to_ticks(0.3)
             && float(converge_ticks) / float(total_analysis_ticks) > 0.88
             && angle_delta(playerinfo_angles[client][shotindex], ideal) < 5.0)
             detected |= AIMBOT_FLAG_SMOOTH;
+
+        if (conv_delta_n >= 4
+            && float(conv_delta_n) * GetTickInterval() >= 0.12) {
+            float cv_mean = conv_delta_sum / float(conv_delta_n);
+            float cv_var  = (conv_delta_sq / float(conv_delta_n)) - (cv_mean * cv_mean);
+            float cv      = (cv_mean > 0.5) ? SquareRoot(FloatAbs(cv_var)) / cv_mean : 99.0;
+
+            if (cv < 0.25
+                && angle_delta(playerinfo_angles[client][shotindex], ideal) < 5.0)
+                detected |= AIMBOT_FLAG_SMOOTH;
+        }
     }
 
-    /* Packetloss is too high, skip all detections. */
     if (skip_due_to_loss(client)) {
         skip_autoshoot = true;
         skip_repeat = true;
@@ -261,35 +267,27 @@ public Action timer_check_aimbot(Handle timer, DataPack pack)
 
     /* Angle-repeat test. */
     if (skip_repeat == false) {
+        float post_ang[3], shot_ang_c[3];
         get_player_log_angles(client, wrap_index(shotindex - 1), false, ang);
-        get_player_log_angles(client, wrap_index(shotindex + 1), false, lang);
-        tdelta = angle_delta(ang, lang);
-        get_player_log_angles(client, shotindex, false, lang);
+        get_player_log_angles(client, wrap_index(shotindex + 1), false, post_ang);
+        float surround_delta = angle_delta(ang, post_ang);
+        get_player_log_angles(client, shotindex, false, shot_ang_c);
 
-        /* Classic +-1 tick check: shot angle is an outlier, and surrounding ticks are similar. */
-        if (tdelta < 10.0 && angle_delta(ang, lang) > 0.5
-            && angle_delta(ang, lang) > tdelta * 5.0)
+        if (surround_delta < 10.0 && angle_delta(ang, shot_ang_c) > 0.5
+            && angle_delta(ang, shot_ang_c) > surround_delta * 5.0)
             detected |= AIMBOT_FLAG_REPEAT;
 
-        /* Extended window check: stable pre-shot aim that snapped perfectly onto target.
-        * Catches LILAc-mode bypass, where shotindex+1 keeps the snapped angle
-        * (making tdelta large and defeating the +-1 check above). */
+        /* Extended pre-shot window check. */
         {
-            float pre2[3], pre3[3], shot_ang[3], ideal_ang[3];
-            aim_at_point(killpos, deathpos, ideal_ang);
+            float pre2[3], pre3[3];
             get_player_log_angles(client, wrap_index(shotindex - 2), false, pre2);
             get_player_log_angles(client, wrap_index(shotindex - 3), false, pre3);
-            get_player_log_angles(client, shotindex, false, shot_ang);
 
-            /* Average per-tick movement among the 3 ticks before the shot. */
             float pre_spread = (angle_delta(ang, pre2) + angle_delta(pre2, pre3)) * 0.5;
+            float shot_dev = angle_delta(ang, shot_ang_c);
 
-            /* How far did the shot tick jump from the last pre-shot position? */
-            float shot_dev = angle_delta(ang, shot_ang);
-
-            /* Pre-shot was very stable, jumped > 12 degrees, landed within 5 degrees of ideal. */
             if (pre_spread < 2.5 && shot_dev > 12.0
-                && angle_delta(shot_ang, ideal_ang) < 5.0)
+                && angle_delta(shot_ang_c, ideal) < 5.0)
                 detected |= AIMBOT_FLAG_REPEAT;
         }
     }
@@ -297,8 +295,8 @@ public Action timer_check_aimbot(Handle timer, DataPack pack)
     /* Autoshoot test. */
     if (skip_autoshoot == false && icvar[CVAR_AIMBOT_AUTOSHOOT]) {
         int tmp = 0;
-        ind = shotindex + 1;
-        for (int i = 0; i < 3; i++) {
+        ind = wrap_index(shotindex + 2);
+        for (int i = 0; i < 5; i++) {
             ind = wrap_index(ind);
 
             if ((playerinfo_buttons[client][ind] & IN_ATTACK))
@@ -307,12 +305,12 @@ public Action timer_check_aimbot(Handle timer, DataPack pack)
             ind = wrap_index(ind - 1);
         }
 
-        /* Onetick perfect shot.
-        * Players must get two of them in a row leading to a kill
-        * or something else must have been detected to get this flag. */
         if (tmp == 1) {
             if (detected || ++aimbot_autoshoot[client] > 1)
                 detected |= AIMBOT_FLAG_AUTOSHOOT;
+        }
+        else if (tmp == 2 && detected) {
+            detected |= AIMBOT_FLAG_AUTOSHOOT;
         }
         else {
             aimbot_autoshoot[client] = 0;
@@ -333,7 +331,6 @@ static void lilac_detected_aimbot(int client, float delta, float td, int flags)
 	if (lilac_forward_allow_cheat_detection(client, CHEAT_AIMBOT) == false)
 		return;
 
-	/* Detection expires in 10 minutes. */
 	CreateTimer(600.0, timer_decrement_aimbot, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE);
 
 	char sDetails[512];
