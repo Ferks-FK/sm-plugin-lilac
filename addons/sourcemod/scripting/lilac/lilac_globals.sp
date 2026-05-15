@@ -130,7 +130,8 @@ char sql_buffer[1500]; /* It's probably bigger than what you need, but better be
 char db_name[64]; /* Database config name from hcvar[CVAR_DATABASE]. */
 
 /* Misc. */
-bool g_bGame;
+EngineVersion g_bGame;
+
 int tick_rate;
 int macro_max;
 int bhop_settings[BHOP_MAX];
