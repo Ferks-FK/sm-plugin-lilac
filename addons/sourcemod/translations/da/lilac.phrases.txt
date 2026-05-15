@@ -63,11 +63,6 @@
 		"da"		"Aimlock Opdaget"
 	}
 
-	"ban_noisemaker"
-	{
-		"da" 		"Uendelig Støj Generator Opdaget"
-	}
-
 	"ban_macro"
 	{
 		"da"		"Macro Opdaget"

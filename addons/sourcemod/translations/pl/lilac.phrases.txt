@@ -54,9 +54,4 @@
 	{
 		"pl"		"Wykryto Aimlock"
 	}
-
-	"ban_noisemaker"
-	{
-		"pl"		"Wykryto Nieskończony Zagłuszacz"
-	}
 }

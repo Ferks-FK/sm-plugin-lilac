@@ -57,9 +57,4 @@
 	{
 		"nl"		"Aimlock gedetecteerd"
 	}
-
-	"ban_noisemaker"
-	{
-		"nl"		"Oneindige noisemaker gedetecteerd"
-	}
 }

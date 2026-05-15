@@ -60,11 +60,6 @@
 		"se"		"Aimlock Upptäckt"
 	}
 
-	"ban_noisemaker"
-	{
-		"se" 		"Oändlig Noisemaker Upptäckt"
-	}
-
 	"ban_macro"
 	{
 		"se"		"Macro Upptäckt"

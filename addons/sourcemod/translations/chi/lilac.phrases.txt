@@ -62,10 +62,6 @@
 		"chi"		"检测到暴力锁头"
 	}
 
-	"ban_noisemaker"
-	{
-		"chi"		"检测到刷屏"
-	}
 	"ban_macro"
 	{
 		"chi"		"检测到辅助宏"

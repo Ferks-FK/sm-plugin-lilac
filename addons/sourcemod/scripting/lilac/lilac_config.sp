@@ -405,7 +405,6 @@ public Action lilac_set_ban_length(int args)
 		PrintToServer("\tlilac_set_ban_length bhop <minutes>");
 		PrintToServer("\tlilac_set_ban_length aimbot <minutes>");
 		PrintToServer("\tlilac_set_ban_length aimlock <minutes>");
-		PrintToServer("\tlilac_set_ban_length noisemaker <minutes>");
 		PrintToServer("\tlilac_set_ban_length macro <minutes>");
 		PrintToServer("\tlilac_set_ban_length name <minutes>\n");
 
@@ -434,9 +433,6 @@ public Action lilac_set_ban_length(int args)
 	}
 	else if (StrEqual(feature, "aimlock", false) || StrEqual(feature, "lock", false)) {
 		index = CHEAT_AIMLOCK;
-	}
-	else if (StrEqual(feature, "noisemaker", false) || StrEqual(feature, "noise", false)) {
-		index = CHEAT_NOISEMAKER_SPAM;
 	}
 	else if (StrEqual(feature, "macro", false)) {
 		index = CHEAT_MACRO;
@@ -474,7 +470,6 @@ public Action lilac_set_ban_length(int args)
 		case CHEAT_BHOP: strcopy(cheat_name, sizeof(cheat_name), "Bhop");
 		case CHEAT_AIMBOT: strcopy(cheat_name, sizeof(cheat_name), "Aimbot");
 		case CHEAT_AIMLOCK: strcopy(cheat_name, sizeof(cheat_name), "Aimlock");
-		case CHEAT_NOISEMAKER_SPAM: strcopy(cheat_name, sizeof(cheat_name), "Noisemaker Spam");
 		case CHEAT_MACRO: strcopy(cheat_name, sizeof(cheat_name), "Macro");
 		case CHEAT_NEWLINE_NAME: strcopy(cheat_name, sizeof(cheat_name), "Newline Name");
 		default: strcopy(cheat_name, sizeof(cheat_name), "Unknown");
@@ -529,10 +524,6 @@ public Action lilac_get_bans_length(int args)
 	// Aimlock
 	effective_length = (ban_length_overwrite[CHEAT_AIMLOCK] <= -1) ? icvar[CVAR_BAN_LENGTH] : ban_length_overwrite[CHEAT_AIMLOCK];
 	PrintToServer("Aimlock             : %-13d : %d", ban_length_overwrite[CHEAT_AIMLOCK], effective_length);
-
-	// Noisemaker Spam
-	effective_length = (ban_length_overwrite[CHEAT_NOISEMAKER_SPAM] <= -1) ? icvar[CVAR_BAN_LENGTH] : ban_length_overwrite[CHEAT_NOISEMAKER_SPAM];
-	PrintToServer("Noisemaker Spam     : %-13d : %d", ban_length_overwrite[CHEAT_NOISEMAKER_SPAM], effective_length);
 
 	// Macro
 	effective_length = (ban_length_overwrite[CHEAT_MACRO] <= -1) ? icvar[CVAR_BAN_LENGTH] : ban_length_overwrite[CHEAT_MACRO];
@@ -668,9 +659,6 @@ public void cvar_change(ConVar convar, const char[] oldValue, const char[] newVa
 	}
 	else if (convar == hcvar[CVAR_AIMLOCK_LIGHT]) {
 		icvar[CVAR_AIMLOCK_LIGHT] = StringToInt(newValue, 10);
-	}
-	else if (convar == hcvar[CVAR_NOISEMAKER_SPAM]) {
-		icvar[CVAR_NOISEMAKER_SPAM] = StringToInt(newValue, 10);
 	}
 	else if (convar == hcvar[CVAR_BACKTRACK_PATCH]) {
 		icvar[CVAR_BACKTRACK_PATCH] = StringToInt(newValue, 10);

@@ -57,9 +57,4 @@
 	{
 		"hu"		"Aimlock Detektálva."
 	}
-
-	"ban_noisemaker"
-	{
-		"hu" 		"Infinite Noisemaker Detektálva."
-	}
 }

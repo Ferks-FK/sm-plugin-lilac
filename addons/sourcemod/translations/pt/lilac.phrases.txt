@@ -60,11 +60,6 @@
 		"pt"		"Auxílio de mira (aimlock) detectado"
 	}
 
-	"ban_noisemaker"
-	{
-		"pt" 		"Brinquedo Barulhento infinito detectado"
-	}
-
 	"ban_macro"
 	{
 		"pt"		"Macro detectado"

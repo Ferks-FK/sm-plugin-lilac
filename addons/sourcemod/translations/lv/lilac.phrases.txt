@@ -63,11 +63,6 @@
 		"lv"		"Aimlock Atklāts"
 	}
 
-	"ban_noisemaker"
-	{
-		"lv" 		"Infinite Noise Maker Atklāts"
-	}
-
 	"ban_macro"
 	{
 		"lv"		"Macro Atklāts"

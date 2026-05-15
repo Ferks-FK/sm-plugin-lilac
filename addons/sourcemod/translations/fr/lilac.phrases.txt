@@ -57,9 +57,4 @@
 	{
 		"fr"		"Aimlock détecté"
 	}
-
-	"ban_noisemaker"
-	{
-		"fr" 		"Spam deGénérateur de bruit infini détecté"
-	}
 }

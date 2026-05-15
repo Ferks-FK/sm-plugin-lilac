@@ -63,11 +63,6 @@
 		"fi"		"Aimlock havaittu"
 	}
 
-	"ban_noisemaker"
-	{
-		"fi" 		"Infinite Noise Maker havaittu"
-	}
-
 	"ban_macro"
 	{
 		"fi"		"Macro havaittu"

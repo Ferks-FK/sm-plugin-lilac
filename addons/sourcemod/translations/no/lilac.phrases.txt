@@ -58,11 +58,6 @@
 		"no"		"Aimlock oppdaget"
 	}
 
-	"ban_noisemaker"
-	{
-		"no" 		"Uendelig Noisemaker-bruk oppdaget"
-	}
-
 	"ban_macro"
 	{
 		"no"		"Macro oppdaget"

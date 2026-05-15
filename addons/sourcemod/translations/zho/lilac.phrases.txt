@@ -63,11 +63,6 @@
 		"zho"		"偵測到鎖頭外掛"
 	}
 
-	"ban_noisemaker"
-	{
-		"zho"		"偵測到洗畫面行為"
-	}
-
 	"ban_macro"
 	{
 		"zho"		"偵測到輔助巨集"

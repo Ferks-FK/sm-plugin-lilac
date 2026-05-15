@@ -63,11 +63,6 @@
 		"en"		"Aimlock Detected"
 	}
 
-	"ban_noisemaker"
-	{
-		"en" 		"Infinite Noise Maker Detected"
-	}
-
 	"ban_macro"
 	{
 		"en"		"Macro Detected"
