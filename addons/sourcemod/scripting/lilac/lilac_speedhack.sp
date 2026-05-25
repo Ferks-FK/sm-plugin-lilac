@@ -18,6 +18,8 @@
 
 static int speedhack_detection[MAXPLAYERS + 1];
 float player_avg_choke[MAXPLAYERS + 1];
+static ConVar g_hMaxCmdrate = null;
+static bool g_bMaxCmdrateChecked = false;
 
 void lilac_speedhack_reset_client(int client)
 {
@@ -28,8 +30,8 @@ void lilac_speedhack_reset_client(int client)
 void lilac_speedhack_update_choke(int client)
 {
     player_avg_choke[client] =
-        (0.1 * GetClientAvgChoke(client, NetFlow_Incoming)) +
-        (0.9 * player_avg_choke[client]);
+        (0.25 * GetClientAvgChoke(client, NetFlow_Incoming)) +
+        (0.75 * player_avg_choke[client]);
 }
 
 public Action timer_check_speedhack(Handle timer)
@@ -50,9 +52,12 @@ public Action timer_check_speedhack(Handle timer)
     * (e.g. 66-tick server with sv_maxcmdrate 100). Using only tick_rate
     * as the base would cause false positives for those legitimate players. */
     int baseline = tick_rate;
-    ConVar hMaxCmdrate = FindConVar("sv_maxcmdrate");
-    if (hMaxCmdrate != null && hMaxCmdrate.IntValue > baseline)
-        baseline = hMaxCmdrate.IntValue;
+    if (!g_bMaxCmdrateChecked) {
+        g_hMaxCmdrate = FindConVar("sv_maxcmdrate");
+        g_bMaxCmdrateChecked = true;
+    }
+    if (g_hMaxCmdrate != null && g_hMaxCmdrate.IntValue > baseline)
+        baseline = g_hMaxCmdrate.IntValue;
 
     for (int client = 1; client <= MaxClients; client++) {
         if (!is_player_valid(client) || IsFakeClient(client))
@@ -61,12 +66,13 @@ public Action timer_check_speedhack(Handle timer)
         if (playerinfo_banned_flags[client][CHEAT_SPEEDHACK])
             continue;
 
+        /* Update choke unconditionally so the EWMA converges during the
+        * grace period and is ready when detection actually starts. */
+        lilac_speedhack_update_choke(client);
+
         /* Player just connected, buffer may not be representative yet. */
         if (GetClientTime(client) < 10.0)
             continue;
-
-        /* Update choke value for the player. */
-        lilac_speedhack_update_choke(client);
 
         if (!IsPlayerAlive(client))
             continue;
@@ -74,6 +80,12 @@ public Action timer_check_speedhack(Handle timer)
         /* High packet loss can cause the server to process queued cmds in
         * bursts, which would trigger false positives. */
         if (skip_due_to_loss(client))
+            continue;
+
+        /* High incoming choke causes the server to process queued usercmds in
+        * bursts, which is indistinguishable from a speedhack. */
+        if (player_avg_choke[client] > 0.3
+            && GetClientAvgChoke(client, NetFlow_Incoming) > 0.2)
             continue;
 
         /* Count usercmds processed in the last second. */
@@ -97,9 +109,9 @@ public Action timer_check_speedhack(Handle timer)
         }
 
         /* Flag if the count significantly exceeds what the server allows.
-        * The ratio 1.5 gives comfortable clearance for normal variance
-        * (e.g., 66 tick → threshold = 99 cmds/sec) while catching
-        * even speedfactor=1 (doubles speed → ~132 cmds/sec). */
+        * The ratio 1.9 gives clearance for normal variance and server lag spikes
+        * (e.g., 100 tick → threshold = ~190 cmds/sec) while catching
+        * speedfactor=1 (doubles speed → ~200 cmds/sec) with a 10 cmd margin. */
         if (float(count) > float(baseline) * SPEEDHACK_CMD_RATIO)
             lilac_detected_speedhack(client, count, baseline);
     }
@@ -118,6 +130,8 @@ static void lilac_detected_speedhack(int client, int cmdcount, int baseline)
 	/* Detection expires in 10 minutes. */
 	CreateTimer(600.0, timer_decrement_speedhack, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE);
 
+	++speedhack_detection[client];
+
 	char sDetails[256];
 	Format(sDetails, sizeof(sDetails),
 		"Detection: %d | CmdsPerSec: %d | ExpectedMax: ~%d | AvgChoke: %.2f",
@@ -129,7 +143,7 @@ static void lilac_detected_speedhack(int client, int cmdcount, int baseline)
 	lilac_forward_client_cheat(client, CHEAT_SPEEDHACK);
 
 	/* Don't log the first detection. */
-	if (++speedhack_detection[client] < 2)
+	if (speedhack_detection[client] < 2)
 		return;
 
 	if (icvar[CVAR_CHEAT_WARN])
