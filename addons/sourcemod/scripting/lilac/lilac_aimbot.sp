@@ -126,12 +126,18 @@ public Action timer_check_aimbot(Handle timer, DataPack pack)
     bool skip_snap = false;
     bool skip_autoshoot = false;
     bool skip_repeat = false;
-    int converge_ticks = 0;
     int total_analysis_ticks = 0;
-    float conv_delta_sum  = 0.0;
-    float conv_delta_sq   = 0.0;
-    int   conv_delta_n    = 0;
-    bool  conv_streak_active = true;
+
+    int   sm_n = 0;
+    int   sm_jerk_count = 0;
+    float sm_sum = 0.0;
+    float sm_sq  = 0.0;
+    float sm_total_jerk = 0.0;
+    float sm_last_tdelta = -1.0;
+    float sm_total_delta = 0.0;
+
+    bool flag_smooth = false;
+    bool flag_jitter = false;
 
     pack.Reset();
     client = GetClientOfUserId(pack.ReadCell());
@@ -194,6 +200,10 @@ public Action timer_check_aimbot(Handle timer, DataPack pack)
         aim_at_point(killpos, deathpos, ideal);
 
         ind = shotindex;
+        float tick_scale = GetTickInterval() / (1.0 / 30.0);
+        float min_total_delta = 4.0 * tick_scale;
+        float min_tdelta = 0.1 * tick_scale;
+
         /* Check angle history 0.5 seconds prior to a shot. */
         for (int i = 0; i < time_to_ticks(0.5); i++) {
             ind = wrap_index(ind - 1);
@@ -222,17 +232,20 @@ public Action timer_check_aimbot(Handle timer, DataPack pack)
                     detected |= AIMBOT_FLAG_SNAP2;
 
                 total_analysis_ticks++;
-                if (laimdist > aimdist)
-                    converge_ticks++;
 
-                if (conv_streak_active) {
-                    if (tdelta > 0.5 && laimdist > aimdist) {
-                        conv_delta_sum += tdelta;
-                        conv_delta_sq  += tdelta * tdelta;
-                        conv_delta_n++;
-                    } else if (tdelta > 0.5) {
-                        conv_streak_active = false;
+                if (laimdist > aimdist && tdelta > min_tdelta) {
+                    sm_sum += tdelta;
+                    sm_sq  += tdelta * tdelta;
+                    sm_total_delta += tdelta;
+
+                    if (sm_last_tdelta >= 0.0) {
+                        sm_total_jerk += FloatAbs(tdelta - sm_last_tdelta);
+                        sm_jerk_count++;
                     }
+                    sm_last_tdelta = tdelta;
+                    sm_n++;
+                } else {
+                    sm_last_tdelta = -1.0;
                 }
             }
 
@@ -240,28 +253,34 @@ public Action timer_check_aimbot(Handle timer, DataPack pack)
             aimdist = laimdist;
         }
 
-        /* Monotonic convergence check. */
-        if (total_analysis_ticks >= time_to_ticks(0.3)
-            && float(converge_ticks) / float(total_analysis_ticks) > 0.88
-            && angle_delta(playerinfo_angles[client][shotindex], ideal) < 5.0)
-            detected |= AIMBOT_FLAG_SMOOTH;
+        if (sm_n >= 5 && sm_jerk_count >= 3 && sm_total_delta >= min_total_delta) {
+            float sm_mean = sm_sum / float(sm_n);
+            float sm_var  = (sm_sq / float(sm_n)) - (sm_mean * sm_mean);
+            float sm_cv   = (sm_mean > 0.0) ? (SquareRoot(FloatAbs(sm_var)) / sm_mean) : 99.0;
+            float sm_avg_jerk = sm_total_jerk / float(sm_jerk_count);
+            float final_dist  = angle_delta(playerinfo_angles[client][shotindex], ideal);
 
-        if (conv_delta_n >= 4
-            && float(conv_delta_n) * GetTickInterval() >= 0.12) {
-            float cv_mean = conv_delta_sum / float(conv_delta_n);
-            float cv_var  = (conv_delta_sq / float(conv_delta_n)) - (cv_mean * cv_mean);
-            float cv      = (cv_mean > 0.5) ? SquareRoot(FloatAbs(cv_var)) / cv_mean : 99.0;
+            /* Log telemetry to a separate file for threshold calibration. */
+            if (sm_cv < 0.28 && sm_avg_jerk < 0.04)
+                lilac_log_smooth_telemetry(client, sm_n, sm_cv, sm_avg_jerk, sm_total_delta, final_dist);
 
-            if (cv < 0.25
-                && angle_delta(playerinfo_angles[client][shotindex], ideal) < 5.0)
-                detected |= AIMBOT_FLAG_SMOOTH;
+            if (sm_cv < 0.20 && sm_avg_jerk < 0.022 && final_dist < 5.0)
+                flag_smooth = true;
         }
+
+        float jitter_threshold = 3.5 * tick_scale;
+        if (total_analysis_ticks >= time_to_ticks(0.25)
+            && total_delta / float(total_analysis_ticks) > jitter_threshold
+            && angle_delta(playerinfo_angles[client][shotindex], ideal) < 5.0)
+            flag_jitter = true;
     }
 
     if (skip_due_to_loss(client)) {
         skip_autoshoot = true;
         skip_repeat = true;
         detected = 0;
+        flag_smooth = false;
+        flag_jitter = false;
         total_delta = 0.0;
     }
 
@@ -317,8 +336,12 @@ public Action timer_check_aimbot(Handle timer, DataPack pack)
         }
     }
 
+    int log_flags = detected;
+    if (flag_smooth) log_flags |= AIMBOT_FLAG_SMOOTH;
+    if (flag_jitter) log_flags |= AIMBOT_FLAG_JITTER;
+
     if (detected || total_delta > AIMBOT_MAX_TOTAL_DELTA)
-        lilac_detected_aimbot(client, delta, total_delta, detected);
+        lilac_detected_aimbot(client, delta, total_delta, log_flags);
 
     return Plugin_Continue;
 }
@@ -335,13 +358,14 @@ static void lilac_detected_aimbot(int client, float delta, float td, int flags)
 
 	char sDetails[512];
 	Format(sDetails, sizeof(sDetails),
-			"Detection: %d | Delta: %.0f | TotalDelta: %.0f | Detected:%s%s%s%s%s%s",
+			"Detection: %d | Delta: %.0f | TotalDelta: %.0f | Detected:%s%s%s%s%s%s%s",
 			aimbot_detection[client], delta, td,
 			((flags & AIMBOT_FLAG_SNAP)      ? " Aim-Snap"        : ""),
 			((flags & AIMBOT_FLAG_SNAP2)     ? " Aim-Snap2"       : ""),
 			((flags & AIMBOT_FLAG_AUTOSHOOT) ? " Autoshoot"       : ""),
 			((flags & AIMBOT_FLAG_REPEAT)    ? " Angle-Repeat"    : ""),
 			((flags & AIMBOT_FLAG_SMOOTH)    ? " Smooth-Converge" : ""),
+			((flags & AIMBOT_FLAG_JITTER)    ? " Jitter"          : ""),
 			((td > AIMBOT_MAX_TOTAL_DELTA)   ? " Total-Delta"     : ""));
 
 	lilac_save_player_details(client, sDetails);
