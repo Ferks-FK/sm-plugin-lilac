@@ -50,6 +50,7 @@
 #include "lilac/lilac_macro.sp"
 #include "lilac/lilac_ping.sp"
 #include "lilac/lilac_speedhack.sp"
+#include "lilac/lilac_infected_damage.sp"
 #include "lilac/lilac_stock.sp"
 #include "lilac/lilac_string.sp" /* String takes care of chat and names. */
 
@@ -83,6 +84,7 @@ public APLRes AskPluginLoad2(Handle hMyself, bool bLate, char[] sError, int err_
 
         /* Build the log path for the file in case the user has overridden sm_basepath. */
         BuildPath(Path_SM, log_file, sizeof(log_file), "logs/lilac.log");
+        BuildPath(Path_SM, smooth_telemetry_log_file, sizeof(smooth_telemetry_log_file), "logs/lilac_smooth_telemetry.log");
 
         return APLRes_Success;
     }
@@ -98,6 +100,9 @@ public void OnPluginStart()
     HookEvent("player_death", event_player_death, EventHookMode_Pre);
     HookEvent("player_spawn", event_teleported, EventHookMode_Post);
     HookEvent("player_changename", event_namechange, EventHookMode_Post);
+
+    if (g_bGame == Engine_Left4Dead2)
+        HookEvent("player_hurt", event_player_hurt, EventHookMode_Post);
 
     HookEntityOutput("trigger_teleport", "OnEndTouch", map_teleport);
 
@@ -301,6 +306,9 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
         /* Patch Backtracking. */
         if (icvar[CVAR_BACKTRACK_PATCH])
             tickcount = lilac_backtrack_patch(client, tickcount);
+
+        /* Clamp infected player tickbase to prevent burst-attack exploit. */
+        lilac_tickbase_fix(client);
     }
 
     lbuttons[client] = buttons;

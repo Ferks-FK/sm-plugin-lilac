@@ -48,7 +48,8 @@ void lilac_warn_admins(int client, int cheat, int detections)
 	case CHEAT_BHOP:      { strcopy(type, sizeof(type), "Bhop"); }
 	case CHEAT_AIMBOT:    { strcopy(type, sizeof(type), "Aimbot"); }
 	case CHEAT_AIMLOCK:   { strcopy(type, sizeof(type), "Aimlock"); }
-	case CHEAT_SPEEDHACK: { strcopy(type, sizeof(type), "Speedhack"); }
+	case CHEAT_SPEEDHACK:     { strcopy(type, sizeof(type), "Speedhack"); }
+	case CHEAT_INFECTED_DMG:  { strcopy(type, sizeof(type), "Infected Damage Exploit"); }
 	/* Macros have their own warning system. */
 	default: { return; }
 	}
@@ -89,6 +90,7 @@ void lilac_reset_client(int client)
 	lilac_macro_reset_client(client);
 	lilac_aimbot_reset_client(client);
 	lilac_speedhack_reset_client(client);
+	lilac_infected_damage_reset_client(client);
 	lilac_ping_reset_client(client);
 	lilac_convar_reset_client(client);
 	lilac_lerp_reset_client(client);
@@ -195,13 +197,73 @@ void lilac_log(bool cleanup)
 	CloseHandle(file);
 }
 
+void lilac_log_smooth_telemetry_setup()
+{
+    if (FileExists(smooth_telemetry_log_file, false, NULL_STRING))
+        return;
+
+    Handle file = OpenFile(smooth_telemetry_log_file, "a");
+
+    if (file == null) {
+        PrintToServer("[Lilac] Cannot open smooth telemetry log file.");
+        return;
+    }
+
+    char date[512];
+    FormatTime(date, sizeof(date), dateformat, GetTime());
+
+    WriteFileLine(file,
+        "=========[Notice]=========\n\
+Smooth Telemetry Log — Little Anti-Cheat %s\n\
+Created: %s\n\n\
+This log contains telemetry data for calibrating smooth aimbot detection thresholds.\n\
+Fields: Name | SteamID | IP | N | CV | Jerk | TotalDelta | FinalDist\n\
+These are NOT detections — data is logged when values are near detection thresholds.\n\
+Use this data to calibrate thresholds before enabling smooth aimbot bans.\n\n",
+        PLUGIN_VERSION, date);
+
+    CloseHandle(file);
+}
+
+void lilac_log_smooth_telemetry(int client, int sm_n, float sm_cv, float sm_avg_jerk, float sm_total_delta, float final_dist)
+{
+    Handle file = OpenFile(smooth_telemetry_log_file, "a");
+
+    if (file == null) {
+        PrintToServer("[Lilac] Cannot open smooth telemetry log file.");
+        return;
+    }
+
+    char date[512], steamid[64], ip[64];
+    FormatTime(date, sizeof(date), dateformat, GetTime());
+    GetClientAuthId(client, AuthId_Steam2, steamid, sizeof(steamid), true);
+    GetClientIP(client, ip, sizeof(ip), true);
+
+    char telemetry_buffer[512];
+    FormatEx(telemetry_buffer, sizeof(telemetry_buffer),
+        "%s [Version %s] {Name: \"%N\" | SteamID: %s | IP: %s} Smooth-Telemetry | N: %d | CV: %.3f | Jerk: %.4f | TotalDelta: %.2f | FinalDist: %.2f",
+        date, PLUGIN_VERSION, client, steamid, ip,
+        sm_n, sm_cv, sm_avg_jerk, sm_total_delta, final_dist);
+
+    /* Remove invalid characters — mesmo padrão do lilac_log. */
+    for (int i = 0; telemetry_buffer[i]; i++) {
+        if (telemetry_buffer[i] == '\n' || telemetry_buffer[i] == 0x0d)
+            telemetry_buffer[i] = '*';
+        else if (telemetry_buffer[i] < 32)
+            telemetry_buffer[i] = '#';
+    }
+
+    WriteFileLine(file, "%s", telemetry_buffer);
+    CloseHandle(file);
+}
+
 void lilac_log_first_time_setup()
 {
-	/* Some admins may not understand how to interpret cheat logs
-	 * correctly, thus, we should warn them so they don't panic
-	 * over trivial stuff. */
-	if (!FileExists(log_file, false, NULL_STRING)) {
-		FormatEx(line_buffer, sizeof(line_buffer),
+    /* Some admins may not understand how to interpret cheat logs
+    * correctly, thus, we should warn them so they don't panic
+    * over trivial stuff. */
+    if (!FileExists(log_file, false, NULL_STRING)) {
+        FormatEx(line_buffer, sizeof(line_buffer),
 "=========[Notice]=========\n\
 Thank you for installing Little Anti-Cheat %s!\n\
 Just a few notes about this Anti-Cheat:\n\n\
@@ -210,8 +272,10 @@ If the suspicions logged are few and rare, they are likely false positives.\n\
 An automatic ban is triggered by 5 or more \"suspicions\" or by one \"detection\".\n\
 If you think a ban may be incorrect, please do not hesitate to let me know.\n\n\
 That is all, have a wonderful day~\n\n\n", PLUGIN_VERSION);
-		lilac_log(false);
-	}
+        lilac_log(false);
+    }
+
+    lilac_log_smooth_telemetry_setup();
 }
 
 void lilac_ban_client(int client, int cheat)
@@ -262,6 +326,8 @@ void lilac_ban_client(int client, int cheat)
 		"[Little Anti-Cheat %s] %T", PLUGIN_VERSION, "ban_name_newline", lang); }
 	case CHEAT_SPEEDHACK: { Format(reason, sizeof(reason),
 		"[Little Anti-Cheat %s] Speedhack", PLUGIN_VERSION); }
+	case CHEAT_INFECTED_DMG: { Format(reason, sizeof(reason),
+		"[Little Anti-Cheat %s] Infected Damage Exploit", PLUGIN_VERSION); }
 	default: return;
 	}
 
@@ -391,21 +457,10 @@ float angle_delta(float []a1, float []a2)
 
 bool skip_due_to_loss(int client)
 {
-    /* Debate: What percentage should this be at?
-    * Skip detection if the loss is more than 50% */
-    if (icvar[CVAR_LOSS_FIX])
-    {
-        if (GetClientAvgLoss(client, NetFlow_Both) > 0.5)
-            return true;
-        
-        // High Choke incoming can cause bursts of usercmds
-        // that trigger false positives in the speedhack detector
-        if (player_avg_choke[client] > 0.3
-            && GetClientAvgChoke(client, NetFlow_Incoming) > 0.2)
-            return true;
-    }
+	if (icvar[CVAR_LOSS_FIX])
+		return GetClientAvgLoss(client, NetFlow_Both) > 0.5;
 
-    return false;
+	return false;
 }
 
 int time_to_ticks(float time)

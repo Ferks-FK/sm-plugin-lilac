@@ -134,6 +134,9 @@ void lilac_config_setup()
 	hcvar[CVAR_SPEEDHACK] = new Convar("lilac_speedhack", "1",
 		"Detect Speedhack.\n0 = Disabled.\n1 = Log only.\n5 or more = ban on n'th detection (Minimum possible is 5).",
 		FCVAR_PROTECTED, true, 0.0, false, 0.0);
+	hcvar[CVAR_INFECTED_DMG] = new Convar("lilac_infected_damage", "1",
+		"Detect infected damage exploit (L4D2 only).\n0 = Disabled.\n1 = Log only.\n5 or more = ban on n'th detection (Minimum possible is 5).",
+		FCVAR_PROTECTED, true, 0.0, false, 0.0);
 
 	for (int i = 0; i < CVAR_MAX; i++) {
 		if (i != CVAR_LOG_DATE)
@@ -407,6 +410,7 @@ public Action lilac_set_ban_length(int args)
 		PrintToServer("\tlilac_set_ban_length aimlock <minutes>");
 		PrintToServer("\tlilac_set_ban_length macro <minutes>");
 		PrintToServer("\tlilac_set_ban_length speedhack <minutes>");
+		PrintToServer("\tlilac_set_ban_length infected_damage <minutes>");
 		PrintToServer("\tlilac_set_ban_length name <minutes>\n");
 
 		return Plugin_Handled;
@@ -440,6 +444,9 @@ public Action lilac_set_ban_length(int args)
 	}
 	else if (StrEqual(feature, "speedhack", false)) {
 		index = CHEAT_SPEEDHACK;
+	}
+	else if (StrEqual(feature, "infected_damage", false) || StrEqual(feature, "infected", false)) {
+		index = CHEAT_INFECTED_DMG;
 	}
 	else if (StrEqual(feature, "name", false) || StrEqual(feature, "filter", false)) {
 		index = CHEAT_NEWLINE_NAME;
@@ -477,6 +484,7 @@ public Action lilac_set_ban_length(int args)
 		case CHEAT_MACRO: strcopy(cheat_name, sizeof(cheat_name), "Macro");
         case CHEAT_SPEEDHACK: strcopy(cheat_name, sizeof(cheat_name), "Speedhack");
 		case CHEAT_NEWLINE_NAME: strcopy(cheat_name, sizeof(cheat_name), "Newline Name");
+		case CHEAT_INFECTED_DMG: strcopy(cheat_name, sizeof(cheat_name), "Infected Damage Exploit");
 		default: strcopy(cheat_name, sizeof(cheat_name), "Unknown");
 	}
 	
@@ -541,6 +549,10 @@ public Action lilac_get_bans_length(int args)
 	// Speedhack
 	effective_length = (ban_length_overwrite[CHEAT_SPEEDHACK] <= -1) ? icvar[CVAR_BAN_LENGTH] : ban_length_overwrite[CHEAT_SPEEDHACK];
 	PrintToServer("Speedhack           : %-13d : %d", ban_length_overwrite[CHEAT_SPEEDHACK], effective_length);
+
+	// Infected Damage Exploit
+	effective_length = (ban_length_overwrite[CHEAT_INFECTED_DMG] <= -1) ? icvar[CVAR_BAN_LENGTH] : ban_length_overwrite[CHEAT_INFECTED_DMG];
+	PrintToServer("Infected Damage     : %-13d : %d", ban_length_overwrite[CHEAT_INFECTED_DMG], effective_length);
 
 	PrintToServer("");
 	PrintToServer("Global ConVar 'lilac_ban_length' = %d minutes", icvar[CVAR_BAN_LENGTH]);
@@ -725,6 +737,13 @@ public void cvar_change(ConVar convar, const char[] oldValue, const char[] newVa
 	}
 	else if (convar == hcvar[CVAR_DATABASE]) {
 		strcopy(db_name, sizeof(db_name), newValue);
+	}
+	else if (convar == hcvar[CVAR_INFECTED_DMG]) {
+		icvar[CVAR_INFECTED_DMG] = StringToInt(newValue);
+
+		if (icvar[CVAR_INFECTED_DMG] > 1
+			&& icvar[CVAR_INFECTED_DMG] < INFECTED_DMG_BAN_MIN)
+			icvar[CVAR_INFECTED_DMG] = INFECTED_DMG_BAN_MIN;
 	}
 	else {
 		convar.GetName(cvarname, sizeof(cvarname));

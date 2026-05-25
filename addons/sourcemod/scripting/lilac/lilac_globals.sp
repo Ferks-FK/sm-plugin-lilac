@@ -59,7 +59,8 @@
 #define CVAR_SOURCEIRC             35
 #define CVAR_DATABASE              36
 #define CVAR_SPEEDHACK             37
-#define CVAR_MAX                   38
+#define CVAR_INFECTED_DMG          38
+#define CVAR_MAX                   39
 
 #define BHOP_INDEX_MIN     0
 #define BHOP_INDEX_JUMP    1
@@ -90,6 +91,8 @@
 
 #define AIMLOCK_BAN_MIN   5
 
+#define INFECTED_DMG_BAN_MIN 5
+
 #define AIMBOT_BAN_MIN           5
 #define AIMBOT_MAX_TOTAL_DELTA   (180.0 * 2.5)
 #define AIMBOT_FLAG_REPEAT       (1 << 0)
@@ -97,9 +100,10 @@
 #define AIMBOT_FLAG_SNAP         (1 << 2)
 #define AIMBOT_FLAG_SNAP2        (1 << 3)
 #define AIMBOT_FLAG_SMOOTH       (1 << 4) /* Monotonic convergence: counters AimStep-style evasion. */
+#define AIMBOT_FLAG_JITTER       (1 << 5) /* High pre-shot angle variance combined with an accurate shot. */
 
 #define SPEEDHACK_BAN_MIN    5
-#define SPEEDHACK_CMD_RATIO  1.5 /* Flag if cmds/sec > tickrate * this value. */
+#define SPEEDHACK_CMD_RATIO  1.9 /* Flag if cmds/sec > tickrate * this value. */
 
 #define STRFLAG_NEWLINE          (1 << 0) /* Carriage return or Newline. */
 #define STRFLAG_WIDE_CHAR_SPAM   (1 << 1) /* Lots of wide character spam. */
@@ -111,7 +115,7 @@
 #define PLUGIN_NAME      "[Lilac] Little Anti-Cheat"
 #define PLUGIN_AUTHOR    "J_Tanzanite, Ferks-FK"
 #define PLUGIN_DESC      "An opensource Anti-Cheat"
-#define PLUGIN_VERSION   "1.8.0"
+#define PLUGIN_VERSION   "1.8.1"
 #define PLUGIN_URL       "https://github.com/J-Tanzanite/Little-Anti-Cheat"
 
 /* Convars. */
@@ -140,6 +144,7 @@ int bhop_settings_min[BHOP_MAX];
 char line_buffer[2048];
 char dateformat[512] = "%Y/%m/%d %H:%M:%S";
 char log_file[PLATFORM_MAX_PATH];
+char smooth_telemetry_log_file[PLATFORM_MAX_PATH];
 float max_angles[3] = {89.01, 0.0, 50.01};
 Handle forwardhandle = INVALID_HANDLE;
 Handle forwardhandleban = INVALID_HANDLE;

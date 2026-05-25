@@ -37,7 +37,8 @@
 #define CHEAT_MACRO              9 /* Macros aren't actually cheats, but are forwarded as such. */
 #define CHEAT_NEWLINE_NAME      10
 #define CHEAT_SPEEDHACK         11
-#define CHEAT_MAX               12
+#define CHEAT_INFECTED_DMG      12
+#define CHEAT_MAX               13
 
 /**
  * Called when a player is detected cheating.
@@ -91,6 +92,8 @@ stock void GetCheatName(int type, char[] buffer, int maxlen)
 		case CHEAT_AIMLOCK:Format(buffer, maxlen, "Aimlock");
 		case CHEAT_MACRO:Format(buffer, maxlen, "Macro");
 		case CHEAT_NEWLINE_NAME:Format(buffer, maxlen, "NewLine Name");
+		case CHEAT_SPEEDHACK:Format(buffer, maxlen, "Speedhack");
+		case CHEAT_INFECTED_DMG:Format(buffer, maxlen, "Infected Damage Exploit");
 	}
 }
 
