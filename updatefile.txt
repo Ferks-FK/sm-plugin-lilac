@@ -4,7 +4,7 @@
 	{
 		"Version"
 		{
-			"Latest"	"1.8.0"
+			"Latest"	"1.8.1"
 		}
 
 		"Notes" "TF2 support has been removed (alternative: https://github.com/sapphonie/StAC-tf2)"
