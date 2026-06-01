@@ -31,7 +31,7 @@
 
 /* Maximum damage per INF_DMG_WINDOW before flagging, indexed by zombie class.
  * 0 disables detection for that class. */
-static const int inf_dmg_threshold[9] = {0, 15, 0, 45, 40, 20, 50, 0, 72};
+static const int inf_dmg_threshold[9] = {0, 15, 0, 45, 55, 20, 50, 0, 72};
 
 static int lilac_inf_threshold(int zclass)
 {
