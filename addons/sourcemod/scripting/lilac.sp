@@ -110,8 +110,8 @@ public void OnPluginStart()
     for (int i = 0; i < CHEAT_MAX; i++)
         ban_length_overwrite[i] = -1;
 
-    /* Bans for Bhop last 1 month by default. */
-    ban_length_overwrite[CHEAT_BHOP] = 24 * 30 * 60;
+    /* Bans for Bhop are permanent by default. */
+    ban_length_overwrite[CHEAT_BHOP] = 0;
 
     /* Bans for Macros are 15 minutes by default. */
     ban_length_overwrite[CHEAT_MACRO] = 15;
