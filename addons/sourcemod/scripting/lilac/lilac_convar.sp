@@ -49,7 +49,6 @@ static ConvarRule convar_rules[] = {
     {"mat_fillrate",                0.0,  0.0,   false, false, false, true},
     {"mat_fullbright",              0.0,  0.0,   false, false, false, true},
     {"mat_hdr_level",               2.0,  0.0,   false, false, false, true},
-    {"mat_monitorgamma_tv_enabled", 0.0,  0.0,   false, false, false, true},
     {"mat_postprocess_enable",      1.0,  0.0,   false, false, false, true},
     {"mat_proxy",                   0.0,  0.0,   false, false, false, true},
     {"mat_queue_mode",              3.0,  0.0,   false, true,  false, true},
