@@ -83,7 +83,6 @@ static ConvarRule convar_rules[] = {
     {"r_visocclusion",              0.0,  0.0,   false, false, false, true},
     {"snd_show",                    0.0,  0.0,   false, false, false, true},
     {"snd_visualize",               0.0,  0.0,   false, false, false, true},
-    {"spec_allowroaming",           0.0,  0.0,   false, false, false, true},
     {"sv_cheats",                   0.0,  0.0,   false, false, false, true},
     {"vcollide_wireframe",          0.0,  0.0,   false, false, false, true}
 };
