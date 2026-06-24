@@ -4,12 +4,13 @@
 	{
 		"Version"
 		{
-			"Latest"	"1.8.1"
+			"Latest"	"1.8.2"
 		}
 
-		"Notes" "TF2 support has been removed (alternative: https://github.com/sapphonie/StAC-tf2)"
-		"Notes" "Some changes to aimbot detection."
-		"Notes" "Added speedhack detection (Still in BETA)"
+		"Notes" "Update speedhack for bad connections."
+		"Notes" "Convar Module: Update to support range/max values."
+		"Notes" "Convar Module: Added more convars for check."
+		"Notes" "Convar Module: Fixed a bug where the first convar was ignored."
 	}
 
 	"Files"

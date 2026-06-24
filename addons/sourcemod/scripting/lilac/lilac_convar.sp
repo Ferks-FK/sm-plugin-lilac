@@ -24,59 +24,74 @@ static int query_failed[MAXPLAYERS + 1];
 enum struct ConvarRule {
 	char name[32];
 	any expected_value;
+	any max_value;
 	bool is_minimum;
+	bool is_maximum;
+	bool is_range;
 	bool is_float;
 }
 
 static ConvarRule convar_rules[] = {
-	{"cl_clock_correction", 1.0, true, true},
-	{"cl_cmdrate", 10, true, false},
-	{"cl_leveloverview", 0.0, false, true},
-	{"cl_overdraw_test", 0.0, false, true},
-	{"cl_phys_timescale", 1.0, false, true},
-	{"cl_pitchdown", 89, false, false},
-	{"cl_pitchup", 89, false, false},
-	{"cl_showevents", 0.0, false, true},
-	{"host_timescale", 1.0, false, true},
-	{"mem_force_flush", 0.0, false, true},
-	{"mat_fillrate", 0.0, false, true},
-	{"mat_proxy", 0.0, false, true},
-	{"mat_wireframe", 0.0, false, true},
-	{"net_blockmsg", 0, false, false},
-	{"net_droppackets", 0, false, false},
-	{"net_fakejitter", 0, false, false},
-	{"net_fakelag", 0, false, false},
-	{"net_fakeloss", 0, false, false},
-	{"r_aspectratio", 0.0, false, true},
-	{"r_ClipAreaPortals", 1, false, false},
-	{"r_colorstaticprops", 0.0, false, true},
-	{"r_DispWalkable", 0.0, false, true},
-	{"r_DrawBeams", 1.0, false, true},
-	{"r_drawbrushmodels", 1.0, false, true},
-	{"r_drawclipbrushes", 0.0, false, true},
-	{"r_drawdecals", 1.0, false, true},
-	{"r_drawentities", 1.0, false, true},
-	{"r_drawmodelstatsoverlay", 0, false, false},
-	{"r_drawopaqueworld", 1.0, false, true},
-	{"r_drawothermodels", 1.0, false, true},
-	{"r_drawparticles", 1.0, false, true},
-	{"r_drawrenderboxes", 0.0, false, true},
-	{"r_drawtranslucentworld", 1.0, false, true},
-	{"r_modelwireframedecal", 0, false, false},
-	{"r_portalsopenall", 0, false, false},
-	{"r_shadowwireframe", 0.0, false, true},
-	{"r_showenvcubemap", 0, false, false},
-	{"r_skybox", 1.0, false, true},
-	{"r_visocclusion", 0.0, false, true},
-	{"snd_show", 0.0, false, true},
-	{"snd_visualize", 0.0, false, true},
-	{"sv_cheats", 0.0, false, true},
-	{"vcollide_wireframe", 0.0, false, true}
+    {"c_thirdpersonshoulder",       0.0,  0.0,   false, false, false, true},
+    {"cl_clock_correction",         1.0,  0.0,   true,  false, false, true},
+    {"cl_cmdrate",                  10,   0,     true,  false, false, false},
+    {"cl_fov",                      75.0, 120.0, false, false, true,  true},
+    {"cl_leveloverview",            0.0,  0.0,   false, false, false, true},
+    {"cl_overdraw_test",            0.0,  0.0,   false, false, false, true},
+    {"cl_phys_timescale",           1.0,  0.0,   false, false, false, true},
+    {"cl_pitchdown",                90,   0,     false, true, false, false},
+    {"cl_pitchup",                  90,   0,     false, true, false, false},
+    {"cl_showevents",               0.0,  0.0,   false, false, false, true},
+    {"fov_desired",                 75.0, 120.0, false, false, true, true},
+    {"host_timescale",              1.0,  0.0,   false, false, false, true},
+    {"l4d_bhop",                    0.0,  0.0,   false, false, false, true},
+    {"l4d_bhop_autostrafe",         0.0,  0.0,   false, false, false, true},
+    {"mat_fillrate",                0.0,  0.0,   false, false, false, true},
+    {"mat_fullbright",              0.0,  0.0,   false, false, false, true},
+    {"mat_hdr_level",               2.0,  0.0,   false, false, false, true},
+    {"mat_monitorgamma_tv_enabled", 0.0,  0.0,   false, false, false, true},
+    {"mat_postprocess_enable",      1.0,  0.0,   false, false, false, true},
+    {"mat_proxy",                   0.0,  0.0,   false, false, false, true},
+    {"mat_queue_mode",              3.0,  0.0,   false, true,  false, true},
+    {"mat_texture_list",            0.0,  0.0,   false, false, false, true},
+    {"mat_wireframe",               0.0,  0.0,   false, false, false, true},
+    {"mem_force_flush",             0.0,  0.0,   false, false, false, true},
+    {"net_blockmsg",                0,    0,     false, false, false, false},
+    {"net_droppackets",             0,    0,     false, false, false, false},
+    {"net_fakejitter",              0,    0,     false, false, false, false},
+    {"net_fakelag",                 0,    0,     false, false, false, false},
+    {"net_fakeloss",                0,    0,     false, false, false, false},
+    {"r_aspectratio",               0.0,  0.0,   false, false, false, true},
+    {"r_ClipAreaPortals",           1,    0,     false, false, false, false},
+    {"r_colorstaticprops",          0.0,  0.0,   false, false, false, true},
+    {"r_DispWalkable",              0.0,  0.0,   false, false, false, true},
+    {"r_DrawBeams",                 1.0,  0.0,   false, false, false, true},
+    {"r_drawbrushmodels",           1.0,  0.0,   false, false, false, true},
+    {"r_drawclipbrushes",           0.0,  0.0,   false, false, false, true},
+    {"r_drawdecals",                1.0,  0.0,   false, false, false, true},
+    {"r_drawentities",              1.0,  0.0,   false, false, false, true},
+    {"r_drawmodelstatsoverlay",     0,    0,     false, false, false, false},
+    {"r_drawopaqueworld",           1.0,  0.0,   false, false, false, true},
+    {"r_drawothermodels",           1.0,  0.0,   false, false, false, true},
+    {"r_drawparticles",             1.0,  0.0,   false, false, false, true},
+    {"r_drawrenderboxes",           0.0,  0.0,   false, false, false, true},
+    {"r_drawtranslucentworld",      1.0,  0.0,   false, false, false, true},
+    {"r_modelwireframedecal",       0,    0,     false, false, false, false},
+    {"r_portalsopenall",            0,    0,     false, false, false, false},
+    {"r_shadowwireframe",           0.0,  0.0,   false, false, false, true},
+    {"r_showenvcubemap",            0,    0,     false, false, false, false},
+    {"r_skybox",                    1.0,  0.0,   false, false, false, true},
+    {"r_visocclusion",              0.0,  0.0,   false, false, false, true},
+    {"snd_show",                    0.0,  0.0,   false, false, false, true},
+    {"snd_visualize",               0.0,  0.0,   false, false, false, true},
+    {"spec_allowroaming",           0.0,  0.0,   false, false, false, true},
+    {"sv_cheats",                   0.0,  0.0,   false, false, false, true},
+    {"vcollide_wireframe",          0.0,  0.0,   false, false, false, true}
 };
 
 void lilac_convar_reset_client(int client)
 {
-	query_index[client] = 0;
+	query_index[client] = -1;
 	query_failed[client] = 0;
 }
 
@@ -132,73 +147,95 @@ public Action timer_query(Handle timer)
 	return Plugin_Continue;
 }
 
-public void query_reply(QueryCookie cookie, int client, ConVarQueryResult result,
-			const char[] cvarName, const char[] cvarValue, any value)
+public void query_reply(QueryCookie cookie, int client, ConVarQueryResult result, const char[] cvarName, const char[] cvarValue, any value)
 {
-	/* Player NEEDS to answer the query. */
-	if (result != ConVarQuery_Okay)
-		return;
+    /* ConVarQuery_NotFound is a valid response — cvar doesn't exist on this client.
+    * Reset the failure counter and move on. */
+    if (result == ConVarQuery_NotFound) {
+        query_failed[client] = 0;
+        return;
+    }
 
-	/* Client did respond to the query request, move on to the next convar. */
-	query_failed[client] = 0;
+    /* Player NEEDS to answer the query. */
+    if (result != ConVarQuery_Okay)
+        return;
 
-	/* Any response the server may recieve may also be faulty, ignore. */
-	if (GetTime() < time_sv_cheats || sv_cheats)
-		return;
+    /* Client did respond to the query request, move on to the next convar. */
+    query_failed[client] = 0;
 
-	/* Already banned. */
-	if (playerinfo_banned_flags[client][CHEAT_CONVAR])
-		return;
+    /* Any response the server may recieve may also be faulty, ignore. */
+    if (GetTime() < time_sv_cheats || sv_cheats)
+        return;
 
-	/* Check against convar rules */
-	for (int i = 0; i < sizeof(convar_rules); i++) {
-		if (!StrEqual(convar_rules[i].name, cvarName, false))
-			continue;
+    /* Already banned. */
+    if (playerinfo_banned_flags[client][CHEAT_CONVAR])
+        return;
 
-		bool is_valid;
+    /* Check against convar rules */
+    for (int i = 0; i < sizeof(convar_rules); i++) {
+        if (!StrEqual(convar_rules[i].name, cvarName, false))
+            continue;
 
-		if (convar_rules[i].is_float) {
-			float fval = StringToFloat(cvarValue);
-			if (convar_rules[i].is_minimum)
-				is_valid = (fval >= convar_rules[i].expected_value);
-			else
-				is_valid = (fval == convar_rules[i].expected_value);
-		} else {
-			int ival = StringToInt(cvarValue);
-			if (convar_rules[i].is_minimum)
-				is_valid = (ival >= convar_rules[i].expected_value);
-			else
-				is_valid = (ival == convar_rules[i].expected_value);
-		}
+        /* Normalize boolean string values before validation. */
+        char normalizedValue[32];
+        strcopy(normalizedValue, sizeof(normalizedValue), cvarValue);
+        if (StrEqual(normalizedValue, "true", false))
+            strcopy(normalizedValue, sizeof(normalizedValue), "1");
+        else if (StrEqual(normalizedValue, "false", false))
+            strcopy(normalizedValue, sizeof(normalizedValue), "0");
 
-		if (is_valid)
-			return;
+        bool is_valid;
 
-		break;
-	}
+        if (convar_rules[i].is_float) {
+            float fval = StringToFloat(normalizedValue);
+            if (convar_rules[i].is_range)
+                is_valid = (fval >= convar_rules[i].expected_value && fval <= convar_rules[i].max_value);
+            else if (convar_rules[i].is_minimum)
+                is_valid = (fval >= convar_rules[i].expected_value);
+            else if (convar_rules[i].is_maximum)
+                is_valid = (fval < convar_rules[i].expected_value);
+            else
+                is_valid = (fval == convar_rules[i].expected_value);
+        } else {
+            int ival = StringToInt(normalizedValue);
+            if (convar_rules[i].is_range)
+                is_valid = (ival >= convar_rules[i].expected_value && ival <= view_as<int>(convar_rules[i].max_value));
+            else if (convar_rules[i].is_minimum)
+                is_valid = (ival >= convar_rules[i].expected_value);
+            else if (convar_rules[i].is_maximum)
+                is_valid = (ival < convar_rules[i].expected_value);
+            else
+                is_valid = (ival == convar_rules[i].expected_value);
+        }
 
-	if (lilac_forward_allow_cheat_detection(client, CHEAT_CONVAR) == false)
-		return;
+        if (is_valid)
+            return;
 
-	char sDetails[512];
-	Format(sDetails, sizeof(sDetails), "%s %s", cvarName, cvarValue);
+        break;
+    }
 
-	lilac_save_player_details(client, sDetails);
-	lilac_forward_client_cheat(client, CHEAT_CONVAR);
+    if (lilac_forward_allow_cheat_detection(client, CHEAT_CONVAR) == false)
+        return;
 
-	if (icvar[CVAR_LOG]) {
-		lilac_log_setup_client(client);
-		Format(line_buffer, sizeof(line_buffer),
-			"%s was detected and banned for an invalid ConVar (%s).",
-			line_buffer, sDetails);
+    char sDetails[512];
+    Format(sDetails, sizeof(sDetails), "%s %s", cvarName, cvarValue);
 
-		lilac_log(true);
+    lilac_save_player_details(client, sDetails);
+    lilac_forward_client_cheat(client, CHEAT_CONVAR);
 
-		if (icvar[CVAR_LOG_EXTRA])
-			lilac_log_extra(client);
-	}
-	database_log(client, "cvar_invalid", DATABASE_BAN);
+    if (icvar[CVAR_LOG]) {
+        lilac_log_setup_client(client);
+        Format(line_buffer, sizeof(line_buffer),
+            "%s was detected and banned for an invalid ConVar (%s).",
+            line_buffer, sDetails);
 
-	playerinfo_banned_flags[client][CHEAT_CONVAR] = true;
-	lilac_ban_client(client, CHEAT_CONVAR);
+        lilac_log(true);
+
+        if (icvar[CVAR_LOG_EXTRA])
+            lilac_log_extra(client);
+    }
+    database_log(client, "cvar_invalid", DATABASE_BAN);
+
+    playerinfo_banned_flags[client][CHEAT_CONVAR] = true;
+    lilac_ban_client(client, CHEAT_CONVAR);
 }
