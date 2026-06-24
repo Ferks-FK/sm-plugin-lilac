@@ -125,66 +125,66 @@ public Action timer_check_speedhack(Handle timer)
 
 static void lilac_detected_speedhack(int client, int cmdcount, int baseline)
 {
-	if (playerinfo_banned_flags[client][CHEAT_SPEEDHACK])
-		return;
+    if (playerinfo_banned_flags[client][CHEAT_SPEEDHACK])
+        return;
 
-	if (lilac_forward_allow_cheat_detection(client, CHEAT_SPEEDHACK) == false)
-		return;
+    if (lilac_forward_allow_cheat_detection(client, CHEAT_SPEEDHACK) == false)
+        return;
 
-	/* Detection expires in 10 minutes. */
-	CreateTimer(600.0, timer_decrement_speedhack, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE);
+    /* Detection expires in 10 minutes. */
+    CreateTimer(600.0, timer_decrement_speedhack, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE);
 
-	++speedhack_detection[client];
+    ++speedhack_detection[client];
 
-	char sDetails[256];
-	Format(sDetails, sizeof(sDetails),
-		"Detection: %d | CmdsPerSec: %d | ExpectedMax: ~%d | AvgChoke: %.2f",
-		speedhack_detection[client], cmdcount,
-		RoundToFloor(float(baseline) * SPEEDHACK_CMD_RATIO),
+    char sDetails[256];
+    Format(sDetails, sizeof(sDetails),
+        "Detection: %d | CmdsPerSec: %d | ExpectedMax: ~%d | AvgChoke: %.2f",
+        speedhack_detection[client], cmdcount,
+        RoundToFloor(float(baseline) * SPEEDHACK_CMD_RATIO),
         player_avg_choke[client]);
 
-	lilac_save_player_details(client, sDetails);
-	lilac_forward_client_cheat(client, CHEAT_SPEEDHACK);
+    lilac_save_player_details(client, sDetails);
+    lilac_forward_client_cheat(client, CHEAT_SPEEDHACK);
 
-	/* Don't log the first detection. */
-	if (speedhack_detection[client] < 2)
-		return;
+    /* Don't log the first detection. */
+    if (speedhack_detection[client] < 2)
+        return;
 
-	if (icvar[CVAR_CHEAT_WARN])
-		lilac_warn_admins(client, CHEAT_SPEEDHACK, speedhack_detection[client]);
+    if (icvar[CVAR_CHEAT_WARN])
+        lilac_warn_admins(client, CHEAT_SPEEDHACK, speedhack_detection[client]);
 
-	if (icvar[CVAR_LOG]) {
-		lilac_log_setup_client(client);
-		Format(line_buffer, sizeof(line_buffer),
-			"%s is suspected of using a speedhack (%s).",
-			line_buffer, sDetails);
+    if (icvar[CVAR_LOG]) {
+        lilac_log_setup_client(client);
+        Format(line_buffer, sizeof(line_buffer),
+            "%s is suspected of using a speedhack (%s).",
+            line_buffer, sDetails);
 
-		lilac_log(true);
+        lilac_log(true);
 
-		if (icvar[CVAR_LOG_EXTRA] == 2)
-			lilac_log_extra(client);
-	}
-	database_log(client, "speedhack", speedhack_detection[client], float(cmdcount), 0.0);
+        if (icvar[CVAR_LOG_EXTRA] == 2)
+            lilac_log_extra(client);
+    }
+    database_log(client, "speedhack", speedhack_detection[client], float(cmdcount), 0.0);
 
     if (speedhack_detection[client] >= icvar[CVAR_SPEEDHACK]
         && icvar[CVAR_SPEEDHACK] >= SPEEDHACK_BAN_MIN
         && player_avg_choke[client] < 0.10) {
 
-		if (icvar[CVAR_LOG]) {
-			lilac_log_setup_client(client);
-			Format(line_buffer, sizeof(line_buffer),
-				"%s was banned for Speedhack.", line_buffer);
+        if (icvar[CVAR_LOG]) {
+            lilac_log_setup_client(client);
+            Format(line_buffer, sizeof(line_buffer),
+                "%s was banned for Speedhack.", line_buffer);
 
-			lilac_log(true);
+            lilac_log(true);
 
-			if (icvar[CVAR_LOG_EXTRA])
-				lilac_log_extra(client);
-		}
-		database_log(client, "speedhack", DATABASE_BAN);
+            if (icvar[CVAR_LOG_EXTRA])
+                lilac_log_extra(client);
+        }
+        database_log(client, "speedhack", DATABASE_BAN);
 
-		playerinfo_banned_flags[client][CHEAT_SPEEDHACK] = true;
-		lilac_ban_client(client, CHEAT_SPEEDHACK);
-	}
+        playerinfo_banned_flags[client][CHEAT_SPEEDHACK] = true;
+        lilac_ban_client(client, CHEAT_SPEEDHACK);
+    }
 }
 
 public Action timer_decrement_speedhack(Handle timer, int userid)
