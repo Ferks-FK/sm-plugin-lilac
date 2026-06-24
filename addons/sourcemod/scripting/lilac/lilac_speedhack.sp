@@ -82,10 +82,14 @@ public Action timer_check_speedhack(Handle timer)
         if (skip_due_to_loss(client))
             continue;
 
-        /* High incoming choke causes the server to process queued usercmds in
-        * bursts, which is indistinguishable from a speedhack. */
+        /* High incoming choke causes burst processing of queued usercmds,
+        * which is indistinguishable from a speedhack. */
         if (player_avg_choke[client] > 0.3
             && GetClientAvgChoke(client, NetFlow_Incoming) > 0.2)
+            continue;
+
+        if (player_avg_choke[client] > 0.1
+            && GetClientAvgChoke(client, NetFlow_Incoming) > 0.1)
             continue;
 
         /* Count usercmds processed in the last second. */
@@ -162,8 +166,9 @@ static void lilac_detected_speedhack(int client, int cmdcount, int baseline)
 	}
 	database_log(client, "speedhack", speedhack_detection[client], float(cmdcount), 0.0);
 
-	if (speedhack_detection[client] >= icvar[CVAR_SPEEDHACK]
-		&& icvar[CVAR_SPEEDHACK] >= SPEEDHACK_BAN_MIN) {
+    if (speedhack_detection[client] >= icvar[CVAR_SPEEDHACK]
+        && icvar[CVAR_SPEEDHACK] >= SPEEDHACK_BAN_MIN
+        && player_avg_choke[client] < 0.10) {
 
 		if (icvar[CVAR_LOG]) {
 			lilac_log_setup_client(client);
