@@ -1,3 +1,13 @@
+1.8.2
+- SpeedHack Module: Adjust detection for players with bad connection.
+- Convar Module: Update to support range/max values.
+- Convar Module: Added more convars for check.
+- Convar Module: Fixed a bug where the first convar was ignored.
+
+1.8.1
+- Ban length for bhop is permanent now.
+- Infected Damage Module: Update threshold for spitter class.
+
 1.8.0
 - TF2 support has been removed (alternative: https://github.com/sapphonie/StAC-tf2)
 - Some changes to aimbot detection.
