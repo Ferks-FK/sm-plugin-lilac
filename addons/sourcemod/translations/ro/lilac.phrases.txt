@@ -40,7 +40,8 @@
 
 	"ban_convar"
 	{
-		"ro"		"Invalid ConVar Detectat"
+        "#format"	"{1:s}"
+		"ro"		"Invalid ConVar Detectat ({1})"
 	}
 
 	"ban_nolerp"

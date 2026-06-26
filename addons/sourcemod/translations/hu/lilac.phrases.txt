@@ -40,7 +40,8 @@
 
 	"ban_convar"
 	{
-		"hu"		"Invalid ConVar Detektálva."
+        "#format"	"{1:s}"
+		"hu"		"Invalid ConVar Detektálva. ({1})"
 	}
 
 	"ban_bhop"

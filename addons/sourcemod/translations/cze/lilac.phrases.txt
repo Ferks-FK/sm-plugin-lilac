@@ -40,7 +40,8 @@
 
 	"ban_convar"
 	{
-		"cze"		"Nalezen špatný ConVar"
+        "#format"	"{1:s}"
+		"cze"		"Nalezen špatný ConVar ({1})"
 	}
 
 	"ban_bhop"

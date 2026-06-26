@@ -37,7 +37,8 @@
 
 	"ban_convar"
 	{
-		"pt"		"Variável do console inválida detectada"
+        "#format"	"{1:s}"
+		"pt"		"Variável do console inválida detectada ({1})"
 	}
 	
 	"ban_nolerp"

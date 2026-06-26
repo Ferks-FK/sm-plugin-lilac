@@ -40,7 +40,8 @@
 
 	"ban_convar"
 	{
-		"lv"		"Invalid ConVar Atklāts"
+        "#format"	"{1:s}"
+		"lv"		"Invalid ConVar Atklāts ({1})"
 	}
 
 	"ban_nolerp"

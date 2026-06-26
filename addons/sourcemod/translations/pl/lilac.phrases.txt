@@ -37,7 +37,8 @@
 
 	"ban_convar"
 	{
-		"pl"		"Wykryto Nieprawidłowy ConVar"
+        "#format"	"{1:s}"
+		"pl"		"Wykryto Nieprawidłowy ConVar ({1})"
 	}
 
 	"ban_bhop"

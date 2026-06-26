@@ -40,7 +40,8 @@
 
 	"ban_convar"
 	{
-		"chi"		"检测到非法变量"
+        "#format"	"{1:s}"
+		"chi"		"检测到非法变量 ({1})"
 	}
 	"ban_nolerp"
 	{

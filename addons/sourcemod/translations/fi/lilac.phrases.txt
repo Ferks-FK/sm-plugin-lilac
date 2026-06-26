@@ -40,7 +40,8 @@
 
 	"ban_convar"
 	{
-		"fi"		"Invalid ConVar havaittu"
+        "#format"	"{1:s}"
+		"fi"		"Invalid ConVar havaittu ({1})"
 	}
 
 	"ban_nolerp"

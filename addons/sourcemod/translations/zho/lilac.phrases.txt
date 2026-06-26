@@ -40,7 +40,8 @@
 
 	"ban_convar"
 	{
-		"zho"		"偵測到非法變數"
+        "#format"	"{1:s}"
+		"zho"		"偵測到非法變數 ({1})"
 	}
 
 	"ban_nolerp"

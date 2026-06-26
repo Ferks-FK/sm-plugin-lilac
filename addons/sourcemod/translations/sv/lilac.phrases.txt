@@ -37,7 +37,8 @@
 
 	"ban_convar"
 	{
-		"se"		"Ogiltig ConVar Upptäckt"
+        "#format"	"{1:s}"
+		"se"		"Ogiltig ConVar Upptäckt ({1})"
 	}
 
 	"ban_nolerp"

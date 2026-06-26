@@ -69,8 +69,8 @@ void lilac_config_setup()
 		"Detect Chat-Clear.\n-1 = Log only.\n0 = Disabled.\n1 = Enabled.",
 		FCVAR_PROTECTED, true, -1.0, true, 1.0);
 	hcvar[CVAR_CONVAR] = new Convar("lilac_convar", "1",
-		"Detect basic invalid ConVars.\n-1 = Log only.\n0 = Disabled.\n1 = Enabled.",
-		FCVAR_PROTECTED, true, -1.0, true, 1.0);
+		"Detect basic invalid ConVars.\n-1 = Log only.\n0 = Disabled.\n1 = Kick.\n2 = Ban.",
+		FCVAR_PROTECTED, true, -1.0, true, 2.0);
 	hcvar[CVAR_NOLERP] = new Convar("lilac_nolerp", "1",
 		"Detect NoLerp.\n-1 = Log only.\n0 = Disabled.\n1 = Enabled.",
 		FCVAR_PROTECTED, true, -1.0, true, 1.0);
@@ -593,186 +593,189 @@ public Action lilac_date_list(int args)
 
 public void cvar_change(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	char cvarname[64];
-	char testdate[512];
+    char cvarname[64];
+    char testdate[512];
 
-	/* Thanks to MAGNAT2645 for informing me I could do this! */
-	if (convar == hcvar[CVAR_ENABLE]) {
-		icvar[CVAR_ENABLE] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_WELCOME]) {
-		icvar[CVAR_WELCOME] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_SB]) {
-		icvar[CVAR_SB] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_MA]) {
-		icvar[CVAR_MA] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_SOURCEIRC]) {
-		icvar[CVAR_SOURCEIRC] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_LOG]) {
-		icvar[CVAR_LOG] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_LOG_EXTRA]) {
-		icvar[CVAR_LOG_EXTRA] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_LOG_MISC]) {
-		icvar[CVAR_LOG_MISC] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_LOG_DATE]) {
-		lilac_setup_date_format(newValue);
-		
-		FormatTime(testdate, sizeof(testdate), dateformat, GetTime());
-		PrintToServer("Date Format Preview: %s", testdate);
-	}
-	else if (convar == hcvar[CVAR_BAN]) {
-		icvar[CVAR_BAN] = StringToInt(newValue);
+    /* Thanks to MAGNAT2645 for informing me I could do this! */
+    if (convar == hcvar[CVAR_ENABLE]) {
+        icvar[CVAR_ENABLE] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_WELCOME]) {
+        icvar[CVAR_WELCOME] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_SB]) {
+        icvar[CVAR_SB] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_MA]) {
+        icvar[CVAR_MA] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_SOURCEIRC]) {
+        icvar[CVAR_SOURCEIRC] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_LOG]) {
+        icvar[CVAR_LOG] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_LOG_EXTRA]) {
+        icvar[CVAR_LOG_EXTRA] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_LOG_MISC]) {
+        icvar[CVAR_LOG_MISC] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_LOG_DATE]) {
+        lilac_setup_date_format(newValue);
+        
+        FormatTime(testdate, sizeof(testdate), dateformat, GetTime());
+        PrintToServer("Date Format Preview: %s", testdate);
+    }
+    else if (convar == hcvar[CVAR_BAN]) {
+        icvar[CVAR_BAN] = StringToInt(newValue);
 
-		if (!icvar[CVAR_BAN])
-			PrintToServer("[Little Anti-Cheat %s] WARNING: 'lilac_ban' has been set to 0, banning of cheaters has been disabled.", PLUGIN_VERSION);
-	}
-	else if (convar == hcvar[CVAR_BAN_LENGTH]) {
-		icvar[CVAR_BAN_LENGTH] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_BAN_LANGUAGE]) {
-		icvar[CVAR_BAN_LANGUAGE] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_CHEAT_WARN]) {
-		icvar[CVAR_CHEAT_WARN] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_ANGLES]) {
-		icvar[CVAR_ANGLES] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_PATCH_ANGLES]) {
-		icvar[CVAR_PATCH_ANGLES] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_CHAT]) {
-		icvar[CVAR_CHAT] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_CONVAR]) {
-		icvar[CVAR_CONVAR] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_NOLERP]) {
-		icvar[CVAR_NOLERP] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_BHOP]) {
-		icvar[CVAR_BHOP] = StringToInt(newValue);
-		lilac_bhop_set_preset();
-	}
-	else if (convar == hcvar[CVAR_AIMBOT]) {
-		icvar[CVAR_AIMBOT] = StringToInt(newValue);
-		
-		if (icvar[CVAR_AIMBOT] > 1 &&
-			icvar[CVAR_AIMBOT] < AIMBOT_BAN_MIN)
-			icvar[CVAR_AIMBOT] = 5;
-	}
-	else if (convar == hcvar[CVAR_AIMBOT_AUTOSHOOT]) {
-		icvar[CVAR_AIMBOT_AUTOSHOOT] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_AIMLOCK]) {
-		icvar[CVAR_AIMLOCK] = StringToInt(newValue);
-		
-		if (icvar[CVAR_AIMLOCK] > 1
-			&& icvar[CVAR_AIMLOCK] < AIMLOCK_BAN_MIN)
-			icvar[CVAR_AIMLOCK] = 5;
-	}
-	else if (convar == hcvar[CVAR_AIMLOCK_LIGHT]) {
-		icvar[CVAR_AIMLOCK_LIGHT] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_BACKTRACK_PATCH]) {
-		icvar[CVAR_BACKTRACK_PATCH] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_BACKTRACK_TOLERANCE]) {
-		icvar[CVAR_BACKTRACK_TOLERANCE] = StringToInt(newValue);
-		
-		if (icvar[CVAR_BACKTRACK_TOLERANCE] > 2)
-			PrintToServer("[Little Anti-Cheat %s] WARNING: It is not recommeded to set backtrack tolerance above 2, only do this if you understand what this means.", PLUGIN_VERSION);
-	}
-	else if (convar == hcvar[CVAR_MAX_PING]) {
-		icvar[CVAR_MAX_PING] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_MAX_PING_SPEC]) {
-		icvar[CVAR_MAX_PING_SPEC] = StringToInt(newValue);
-		
-		if (icvar[CVAR_MAX_PING_SPEC] < 30)
-			icvar[CVAR_MAX_PING_SPEC] = 0;
-	}
-	else if (convar == hcvar[CVAR_MAX_LERP]) {
-		icvar[CVAR_MAX_LERP] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_MACRO]) {
-		icvar[CVAR_MACRO] = StringToInt(newValue);
+        if (!icvar[CVAR_BAN])
+            PrintToServer("[Little Anti-Cheat %s] WARNING: 'lilac_ban' has been set to 0, banning of cheaters has been disabled.", PLUGIN_VERSION);
+    }
+    else if (convar == hcvar[CVAR_BAN_LENGTH]) {
+        icvar[CVAR_BAN_LENGTH] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_BAN_LANGUAGE]) {
+        icvar[CVAR_BAN_LANGUAGE] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_CHEAT_WARN]) {
+        icvar[CVAR_CHEAT_WARN] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_ANGLES]) {
+        icvar[CVAR_ANGLES] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_PATCH_ANGLES]) {
+        icvar[CVAR_PATCH_ANGLES] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_CHAT]) {
+        icvar[CVAR_CHAT] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_CONVAR]) {
+        icvar[CVAR_CONVAR] = StringToInt(newValue);
 
-		if (icvar[CVAR_MACRO] > 0)
-			PrintToServer("[Little Anti-Cheat %s] WARNING: It's recommended to use log-only method for now.", PLUGIN_VERSION);
+        if (icvar[CVAR_CONVAR] > 2)
+            icvar[CVAR_CONVAR] = 2;
+    }
+    else if (convar == hcvar[CVAR_NOLERP]) {
+        icvar[CVAR_NOLERP] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_BHOP]) {
+        icvar[CVAR_BHOP] = StringToInt(newValue);
+        lilac_bhop_set_preset();
+    }
+    else if (convar == hcvar[CVAR_AIMBOT]) {
+        icvar[CVAR_AIMBOT] = StringToInt(newValue);
+        
+        if (icvar[CVAR_AIMBOT] > 1 &&
+            icvar[CVAR_AIMBOT] < AIMBOT_BAN_MIN)
+            icvar[CVAR_AIMBOT] = 5;
+    }
+    else if (convar == hcvar[CVAR_AIMBOT_AUTOSHOOT]) {
+        icvar[CVAR_AIMBOT_AUTOSHOOT] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_AIMLOCK]) {
+        icvar[CVAR_AIMLOCK] = StringToInt(newValue);
+        
+        if (icvar[CVAR_AIMLOCK] > 1
+            && icvar[CVAR_AIMLOCK] < AIMLOCK_BAN_MIN)
+            icvar[CVAR_AIMLOCK] = 5;
+    }
+    else if (convar == hcvar[CVAR_AIMLOCK_LIGHT]) {
+        icvar[CVAR_AIMLOCK_LIGHT] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_BACKTRACK_PATCH]) {
+        icvar[CVAR_BACKTRACK_PATCH] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_BACKTRACK_TOLERANCE]) {
+        icvar[CVAR_BACKTRACK_TOLERANCE] = StringToInt(newValue);
+        
+        if (icvar[CVAR_BACKTRACK_TOLERANCE] > 2)
+            PrintToServer("[Little Anti-Cheat %s] WARNING: It is not recommeded to set backtrack tolerance above 2, only do this if you understand what this means.", PLUGIN_VERSION);
+    }
+    else if (convar == hcvar[CVAR_MAX_PING]) {
+        icvar[CVAR_MAX_PING] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_MAX_PING_SPEC]) {
+        icvar[CVAR_MAX_PING_SPEC] = StringToInt(newValue);
+        
+        if (icvar[CVAR_MAX_PING_SPEC] < 30)
+            icvar[CVAR_MAX_PING_SPEC] = 0;
+    }
+    else if (convar == hcvar[CVAR_MAX_LERP]) {
+        icvar[CVAR_MAX_LERP] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_MACRO]) {
+        icvar[CVAR_MACRO] = StringToInt(newValue);
 
-		/* Settings changed, reset counters. */
-		for (int i = 1; i <= MaxClients; i++)
-			lilac_macro_reset_client(i);
-	}
-	else if (convar == hcvar[CVAR_MACRO_WARNING]) {
-		icvar[CVAR_MACRO_WARNING] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_MACRO_DEAL_METHOD]) {
-		icvar[CVAR_MACRO_DEAL_METHOD] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_MACRO_MODE]) {
-		icvar[CVAR_MACRO_MODE] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_FILTER_NAME]) {
-		icvar[CVAR_FILTER_NAME] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_FILTER_CHAT]) {
-		icvar[CVAR_FILTER_CHAT] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_LOSS_FIX]) {
-		icvar[CVAR_LOSS_FIX] = StringToInt(newValue);
-	}
-	else if (convar == hcvar[CVAR_AUTO_UPDATE]) {
-		icvar[CVAR_AUTO_UPDATE] = StringToInt(newValue);
-		
-		lilac_update_url();
-	}
-	else if (convar == hcvar[CVAR_DATABASE]) {
-		strcopy(db_name, sizeof(db_name), newValue);
-	}
-	else if (convar == hcvar[CVAR_INFECTED_DMG]) {
-		icvar[CVAR_INFECTED_DMG] = StringToInt(newValue);
+        if (icvar[CVAR_MACRO] > 0)
+            PrintToServer("[Little Anti-Cheat %s] WARNING: It's recommended to use log-only method for now.", PLUGIN_VERSION);
 
-		if (icvar[CVAR_INFECTED_DMG] > 1
-			&& icvar[CVAR_INFECTED_DMG] < INFECTED_DMG_BAN_MIN)
-			icvar[CVAR_INFECTED_DMG] = INFECTED_DMG_BAN_MIN;
-	}
-	else {
-		convar.GetName(cvarname, sizeof(cvarname));
-		
-		if (StrEqual(cvarname, "sv_autobunnyhopping", false)) {
-			force_disable_bhop = StringToInt(newValue);
-		}
-		else if (StrEqual(cvarname, "sv_maxupdaterate", false)) {
-			/* NoLerp checks need to know this value. */
-			lilac_lerp_maxupdaterate_changed(StringToInt(newValue));
+        /* Settings changed, reset counters. */
+        for (int i = 1; i <= MaxClients; i++)
+            lilac_macro_reset_client(i);
+    }
+    else if (convar == hcvar[CVAR_MACRO_WARNING]) {
+        icvar[CVAR_MACRO_WARNING] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_MACRO_DEAL_METHOD]) {
+        icvar[CVAR_MACRO_DEAL_METHOD] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_MACRO_MODE]) {
+        icvar[CVAR_MACRO_MODE] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_FILTER_NAME]) {
+        icvar[CVAR_FILTER_NAME] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_FILTER_CHAT]) {
+        icvar[CVAR_FILTER_CHAT] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_LOSS_FIX]) {
+        icvar[CVAR_LOSS_FIX] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_AUTO_UPDATE]) {
+        icvar[CVAR_AUTO_UPDATE] = StringToInt(newValue);
+        
+        lilac_update_url();
+    }
+    else if (convar == hcvar[CVAR_DATABASE]) {
+        strcopy(db_name, sizeof(db_name), newValue);
+    }
+    else if (convar == hcvar[CVAR_INFECTED_DMG]) {
+        icvar[CVAR_INFECTED_DMG] = StringToInt(newValue);
 
-			/* Changing this convar mid-game can cause false positives.
-			 * Ignore players already in-game. */
-			for (int i = 1; i <= MaxClients; i++)
-				lilac_lerp_ignore_nolerp_client(i);
-		}
-		else if (StrEqual(cvarname, "sv_client_min_interp_ratio", false)) {
-			lilac_lerp_ratio_changed(StringToInt(newValue));
-		}
-		else if (StrEqual(cvarname, "sv_client_max_interp_ratio", false)) {
-			lilac_lerp_ratio_changed(StringToInt(newValue));
-		}
-		else if (StrEqual(cvarname, "sv_cheats", false)) {
-			sv_cheats = StringToInt(newValue);
-			
-			/* Delay convar checks for 30 seconds. */
-			time_sv_cheats = GetTime() + QUERY_TIMEOUT;
-		}
-	}
+        if (icvar[CVAR_INFECTED_DMG] > 1
+            && icvar[CVAR_INFECTED_DMG] < INFECTED_DMG_BAN_MIN)
+            icvar[CVAR_INFECTED_DMG] = INFECTED_DMG_BAN_MIN;
+    }
+    else {
+        convar.GetName(cvarname, sizeof(cvarname));
+        
+        if (StrEqual(cvarname, "sv_autobunnyhopping", false)) {
+            force_disable_bhop = StringToInt(newValue);
+        }
+        else if (StrEqual(cvarname, "sv_maxupdaterate", false)) {
+            /* NoLerp checks need to know this value. */
+            lilac_lerp_maxupdaterate_changed(StringToInt(newValue));
+
+            /* Changing this convar mid-game can cause false positives.
+            * Ignore players already in-game. */
+            for (int i = 1; i <= MaxClients; i++)
+                lilac_lerp_ignore_nolerp_client(i);
+        }
+        else if (StrEqual(cvarname, "sv_client_min_interp_ratio", false)) {
+            lilac_lerp_ratio_changed(StringToInt(newValue));
+        }
+        else if (StrEqual(cvarname, "sv_client_max_interp_ratio", false)) {
+            lilac_lerp_ratio_changed(StringToInt(newValue));
+        }
+        else if (StrEqual(cvarname, "sv_cheats", false)) {
+            sv_cheats = StringToInt(newValue);
+            
+            /* Delay convar checks for 30 seconds. */
+            time_sv_cheats = GetTime() + QUERY_TIMEOUT;
+        }
+    }
 }
 
 static int bclamp(int n, int idx)

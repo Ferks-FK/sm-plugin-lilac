@@ -311,7 +311,7 @@ void lilac_ban_client(int client, int cheat)
 	case CHEAT_CHATCLEAR: { Format(reason, sizeof(reason),
 		"[Little Anti-Cheat %s] %T", PLUGIN_VERSION, "ban_chat_clear", lang); }
 	case CHEAT_CONVAR: { Format(reason, sizeof(reason),
-		"[Little Anti-Cheat %s] %T", PLUGIN_VERSION, "ban_convar", lang); }
+		"[Little Anti-Cheat %s] %T", PLUGIN_VERSION, "ban_convar", lang, playerinfo_detected[client]); }
 	case CHEAT_NOLERP: { Format(reason, sizeof(reason),
 		"[Little Anti-Cheat %s] %T", PLUGIN_VERSION, "ban_nolerp", lang); }
 	case CHEAT_BHOP: { Format(reason, sizeof(reason),

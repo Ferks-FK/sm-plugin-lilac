@@ -40,7 +40,8 @@
 
 	"ban_convar"
 	{
-		"nl"		"Ongeldige ConVar gedetecteerd"
+        "#format"	"{1:s}"
+		"nl"		"Ongeldige ConVar gedetecteerd ({1})"
 	}
 
 	"ban_bhop"

@@ -32,7 +32,6 @@ enum struct ConvarRule {
 }
 
 static ConvarRule convar_rules[] = {
-    {"c_thirdpersonshoulder",       0.0,  0.0,   false, false, false, true},
     {"cl_clock_correction",         1.0,  0.0,   true,  false, false, true},
     {"cl_cmdrate",                  10,   0,     true,  false, false, false},
     {"cl_fov",                      75.0, 120.0, false, false, true,  true},
@@ -223,17 +222,27 @@ public void query_reply(QueryCookie cookie, int client, ConVarQueryResult result
 
     if (icvar[CVAR_LOG]) {
         lilac_log_setup_client(client);
-        Format(line_buffer, sizeof(line_buffer),
-            "%s was detected and banned for an invalid ConVar (%s).",
-            line_buffer, sDetails);
+
+        if (icvar[CVAR_CONVAR] == 1)
+            Format(line_buffer, sizeof(line_buffer),
+                "%s was detected and kicked for an invalid ConVar (%s).",
+                line_buffer, sDetails);
+        else if (icvar[CVAR_CONVAR] == 2)
+            Format(line_buffer, sizeof(line_buffer),
+                "%s was detected and banned for an invalid ConVar (%s).",
+                line_buffer, sDetails);
 
         lilac_log(true);
 
         if (icvar[CVAR_LOG_EXTRA])
             lilac_log_extra(client);
     }
-    database_log(client, "cvar_invalid", DATABASE_BAN);
+    database_log(client, "cvar_invalid", icvar[CVAR_CONVAR] == 1 ? DATABASE_KICK : DATABASE_BAN);
 
     playerinfo_banned_flags[client][CHEAT_CONVAR] = true;
-    lilac_ban_client(client, CHEAT_CONVAR);
+
+    if (icvar[CVAR_CONVAR] == 1)
+        KickClient(client, "[Lilac] %T", "ban_convar", client, sDetails);
+    else if (icvar[CVAR_CONVAR] == 2)
+        lilac_ban_client(client, CHEAT_CONVAR);
 }

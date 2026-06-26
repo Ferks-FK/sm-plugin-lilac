@@ -40,7 +40,8 @@
 
 	"ban_convar"
 	{
-		"fr"		"ConVar invalide détecté"
+        "#format"	"{1:s}"
+		"fr"		"ConVar invalide détecté ({1})"
 	}
 
 	"ban_bhop"

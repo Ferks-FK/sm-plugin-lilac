@@ -40,7 +40,8 @@
 
 	"ban_convar"
 	{
-		"no"		"Ugyldig console verdi oppdaget"
+        "#format"	"{1:s}"
+		"no"		"Ugyldig console verdi oppdaget ({1})"
 	}
 
 	"ban_bhop"

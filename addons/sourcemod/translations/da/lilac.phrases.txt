@@ -40,7 +40,8 @@
 
 	"ban_convar"
 	{
-		"da"		"Ugyldig ConVar Opdaget"
+        "#format"	"{1:s}"
+		"da"		"Ugyldig ConVar Opdaget ({1})"
 	}
 
 	"ban_nolerp"

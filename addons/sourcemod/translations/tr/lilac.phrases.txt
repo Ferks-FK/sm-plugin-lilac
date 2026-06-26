@@ -40,7 +40,8 @@
 
 	"ban_convar"
 	{
-		"tr"		"Geçersiz ConVar Tespit Edildi"
+        "#format"	"{1:s}"
+		"tr"		"Geçersiz ConVar Tespit Edildi ({1})"
 	}
 
 	"ban_nolerp"
