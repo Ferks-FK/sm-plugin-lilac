@@ -235,31 +235,34 @@ public Action timer_decrement_infected_dmg(Handle timer, int userid)
  * exploits that bypass cooldown enforcement in RunCmd. */
 void lilac_tickbase_fix(int client)
 {
-	if (!icvar[CVAR_ENABLE] || !icvar[CVAR_INFECTED_DMG])
-		return;
+    if (!icvar[CVAR_ENABLE] || !icvar[CVAR_INFECTED_DMG])
+        return;
 
-	if (!IsPlayerAlive(client))
-		return;
+    if (!IsPlayerAlive(client))
+        return;
 
-	int serverTick = GetGameTickCount();
-	int diff       = serverTick - GetEntProp(client, Prop_Send, "m_nTickBase");
+    int serverTick = GetGameTickCount();
+    int diff       = serverTick - GetEntProp(client, Prop_Send, "m_nTickBase");
 
-	if (diff <= tick_rate * TICKBASE_CLAMP_SECS)
-		return;
+    if (diff <= tick_rate * TICKBASE_CLAMP_SECS)
+        return;
 
-	SetEntProp(client, Prop_Send, "m_nTickBase", serverTick);
+    SetEntProp(client, Prop_Send, "m_nTickBase", serverTick);
 
-	if (!icvar[CVAR_LOG] || diff <= tick_rate * TICKBASE_LOG_SECS)
-		return;
+    if (!icvar[CVAR_LOG] || diff <= tick_rate * TICKBASE_LOG_SECS)
+        return;
 
-	float now = GetGameTime();
-	if (now - inf_tbfix_last_log[client] < 5.0)
-		return;
+    float now = GetGameTime();
+    if (now - inf_tbfix_last_log[client] < 5.0)
+        return;
 
-	inf_tbfix_last_log[client] = now;
-	lilac_log_setup_client(client);
-	Format(line_buffer, sizeof(line_buffer),
-		"%s tickbase manipulation: %d ticks (%.1fs) ahead. Clamped.",
-		line_buffer, diff, float(diff) * GetTickInterval());
-	lilac_log(true);
+    inf_tbfix_last_log[client] = now;
+    lilac_log_setup_client(client);
+    Format(line_buffer, sizeof(line_buffer),
+        "%s tickbase manipulation: %d ticks (%.1fs) ahead. Clamped.",
+        line_buffer, diff, float(diff) * GetTickInterval());
+    lilac_log(true);
+
+    if (icvar[CVAR_LOG_EXTRA])
+        lilac_log_extra(client);
 }
