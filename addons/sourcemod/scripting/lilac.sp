@@ -167,16 +167,6 @@ public void OnPluginStart()
         lilac_log_first_time_setup();
 }
 
-public void OnMapStart()
-{
-    lilac_server_lag_on_map_start();
-}
-
-public void OnGameFrame()
-{
-    lilac_calc_server_tps();
-}
-
 public void OnAllPluginsLoaded()
 {
     sourcebanspp_exist = LibraryExists("sourcebans++");
