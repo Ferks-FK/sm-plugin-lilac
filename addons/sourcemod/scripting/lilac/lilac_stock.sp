@@ -127,9 +127,15 @@ void lilac_log_setup_client(int client)
 	GetClientAuthId(client, AuthId_Steam2, steamid, sizeof(steamid), true);
 	GetClientIP(client, ip, sizeof(ip), true);
 
+	char matchid[64], matchid_part[80];
+	matchid_part[0] = '\0';
+
+	if (icvar[CVAR_AR] && NATIVE_EXISTS("AR_GetMatchID") && AR_GetMatchID(matchid, sizeof(matchid)))
+		Format(matchid_part, sizeof(matchid_part), " | MatchID: %s", matchid);
+
 	FormatEx(line_buffer, sizeof(line_buffer),
-		"%s [Version %s] {Name: \"%N\" | SteamID: %s | IP: %s}",
-		date, PLUGIN_VERSION, client, steamid, ip);
+		"%s [Version %s] {Name: \"%N\" | SteamID: %s | IP: %s%s}",
+		date, PLUGIN_VERSION, client, steamid, ip, matchid_part);
 }
 
 void lilac_log_extra(int client)
@@ -217,15 +223,18 @@ void lilac_log_smooth_telemetry_setup()
 Smooth Telemetry Log — Little Anti-Cheat %s\n\
 Created: %s\n\n\
 This log contains telemetry data for calibrating smooth aimbot detection thresholds.\n\
-Fields: Name | SteamID | IP | N | CV | Jerk | TotalDelta | FinalDist\n\
+Smooth-Telemetry fields: Name | SteamID | IP | N | CV | Jerk | TotalDelta | FinalDist\n\
+Bypass-Telemetry fields: Name | SteamID | IP | N | CV | Jerk | TotalDelta | FinalDist | PreConverge | PostConverge\n\
 These are NOT detections — data is logged when values are near detection thresholds.\n\
-Use this data to calibrate thresholds before enabling smooth aimbot bans.\n\n",
+Use this data to calibrate thresholds before enabling bans.\n\n",
         PLUGIN_VERSION, date);
 
     CloseHandle(file);
 }
 
-void lilac_log_smooth_telemetry(int client, int sm_n, float sm_cv, float sm_avg_jerk, float sm_total_delta, float final_dist)
+void lilac_log_smooth_telemetry(int client, int sm_n, float sm_cv, float sm_avg_jerk,
+    float sm_total_delta, float final_dist,
+    float pre_ratio = -1.0, float post_ratio = -1.0)
 {
     Handle file = OpenFile(smooth_telemetry_log_file, "a");
 
@@ -239,13 +248,25 @@ void lilac_log_smooth_telemetry(int client, int sm_n, float sm_cv, float sm_avg_
     GetClientAuthId(client, AuthId_Steam2, steamid, sizeof(steamid), true);
     GetClientIP(client, ip, sizeof(ip), true);
 
-    char telemetry_buffer[512];
-    FormatEx(telemetry_buffer, sizeof(telemetry_buffer),
-        "%s [Version %s] {Name: \"%N\" | SteamID: %s | IP: %s} Smooth-Telemetry | N: %d | CV: %.3f | Jerk: %.4f | TotalDelta: %.2f | FinalDist: %.2f",
-        date, PLUGIN_VERSION, client, steamid, ip,
-        sm_n, sm_cv, sm_avg_jerk, sm_total_delta, final_dist);
+    char telemetry_buffer[768];
 
-    /* Remove invalid characters — mesmo padrão do lilac_log. */
+    if (pre_ratio < 0.0) {
+        /* Standard smooth aimbot entry. */
+        FormatEx(telemetry_buffer, sizeof(telemetry_buffer),
+            "%s [Version %s] {Name: \"%N\" | SteamID: %s | IP: %s} Smooth-Telemetry | N: %d | CV: %.3f | Jerk: %.4f | TotalDelta: %.2f | FinalDist: %.2f",
+            date, PLUGIN_VERSION, client, steamid, ip,
+            sm_n, sm_cv, sm_avg_jerk, sm_total_delta, final_dist);
+    }
+    else {
+        /* Bypass telemetry entry — includes pre/post convergence ratios. */
+        FormatEx(telemetry_buffer, sizeof(telemetry_buffer),
+            "%s [Version %s] {Name: \"%N\" | SteamID: %s | IP: %s} Bypass-Telemetry | N: %d | CV: %.3f | Jerk: %.4f | TotalDelta: %.2f | FinalDist: %.2f | PreConverge: %.2f | PostConverge: %.2f",
+            date, PLUGIN_VERSION, client, steamid, ip,
+            sm_n, sm_cv, sm_avg_jerk, sm_total_delta, final_dist,
+            pre_ratio, post_ratio);
+    }
+
+    /* Remove invalid characters — same pattern as lilac_log. */
     for (int i = 0; telemetry_buffer[i]; i++) {
         if (telemetry_buffer[i] == '\n' || telemetry_buffer[i] == 0x0d)
             telemetry_buffer[i] = '*';

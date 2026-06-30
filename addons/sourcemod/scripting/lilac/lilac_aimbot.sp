@@ -127,6 +127,7 @@ public Action timer_check_aimbot(Handle timer, DataPack pack)
     bool skip_autoshoot = false;
     bool skip_repeat = false;
     int total_analysis_ticks = 0;
+    int converge_ticks = 0;
 
     int   sm_n = 0;
     int   sm_jerk_count = 0;
@@ -135,6 +136,11 @@ public Action timer_check_aimbot(Handle timer, DataPack pack)
     float sm_total_jerk = 0.0;
     float sm_last_tdelta = -1.0;
     float sm_total_delta = 0.0;
+
+    /* Declared at function scope so bypass telemetry can access them
+     * without recomputing inside the smooth block. */
+    float sm_cv = 99.0;
+    float sm_avg_jerk = 0.0;
 
     bool flag_smooth = false;
     bool flag_jitter = false;
@@ -233,6 +239,10 @@ public Action timer_check_aimbot(Handle timer, DataPack pack)
 
                 total_analysis_ticks++;
 
+                /* Count ticks converging toward ideal — used for pre/post bypass ratio. */
+                if (laimdist > aimdist)
+                    converge_ticks++;
+
                 if (laimdist > aimdist && tdelta > min_tdelta) {
                     sm_sum += tdelta;
                     sm_sq  += tdelta * tdelta;
@@ -253,19 +263,68 @@ public Action timer_check_aimbot(Handle timer, DataPack pack)
             aimdist = laimdist;
         }
 
+        /* Calculated once here — used by both smooth block and bypass telemetry below. */
+        float final_dist = angle_delta(playerinfo_angles[client][shotindex], ideal);
+
+        /* Smooth aimbot mathematical validation. */
         if (sm_n >= 5 && sm_jerk_count >= 3 && sm_total_delta >= min_total_delta) {
             float sm_mean = sm_sum / float(sm_n);
             float sm_var  = (sm_sq / float(sm_n)) - (sm_mean * sm_mean);
-            float sm_cv   = (sm_mean > 0.0) ? (SquareRoot(FloatAbs(sm_var)) / sm_mean) : 99.0;
-            float sm_avg_jerk = sm_total_jerk / float(sm_jerk_count);
-            float final_dist  = angle_delta(playerinfo_angles[client][shotindex], ideal);
+            sm_cv       = (sm_mean > 0.0) ? (SquareRoot(FloatAbs(sm_var)) / sm_mean) : 99.0;
+            sm_avg_jerk = sm_total_jerk / float(sm_jerk_count);
 
             /* Log telemetry to a separate file for threshold calibration. */
             if (sm_cv < 0.28 && sm_avg_jerk < 0.04)
                 lilac_log_smooth_telemetry(client, sm_n, sm_cv, sm_avg_jerk, sm_total_delta, final_dist);
 
+            /* Not yet calibrated — store in flag_smooth, not detected. */
             if (sm_cv < 0.20 && sm_avg_jerk < 0.022 && final_dist < 5.0)
                 flag_smooth = true;
+        }
+
+        int post_converge_ticks = 0;
+        int post_total_ticks    = 0;
+        {
+            float post_laimdist = final_dist;
+            float post_aimdist;
+
+            int post_ind = shotindex;
+
+            for (int i = 0; i < time_to_ticks(0.3); i++) {
+                post_ind = wrap_index(post_ind + 1);
+
+                /* Don't read past the current tick. */
+                if (post_ind == playerinfo_index[client])
+                    break;
+
+                /* Stop if we've moved more than 0.3s forward from the shot. */
+                if (playerinfo_time_usercmd[client][post_ind] - playerinfo_time_usercmd[client][shotindex] > 0.3)
+                    break;
+
+                /* Uninitialized slot — stop. */
+                if (playerinfo_time_usercmd[client][post_ind] == 0.0)
+                    break;
+
+                post_aimdist = angle_delta(playerinfo_angles[client][post_ind], ideal);
+
+                if (post_laimdist > post_aimdist)
+                    post_converge_ticks++;
+
+                post_total_ticks++;
+                post_laimdist = post_aimdist;
+            }
+        }
+
+        /* Bypass telemetry — log only, no detection yet. */
+        if (final_dist < 5.0
+            && total_analysis_ticks >= time_to_ticks(0.2)
+            && post_total_ticks >= time_to_ticks(0.1))
+        {
+            float pre_ratio  = float(converge_ticks)      / float(total_analysis_ticks);
+            float post_ratio = float(post_converge_ticks) / float(post_total_ticks);
+
+            lilac_log_smooth_telemetry(client, sm_n, sm_cv, sm_avg_jerk, sm_total_delta, final_dist,
+                pre_ratio, post_ratio);
         }
 
         float jitter_threshold = 3.5 * tick_scale;
