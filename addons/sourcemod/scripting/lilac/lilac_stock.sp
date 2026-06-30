@@ -476,10 +476,10 @@ float angle_delta(float []a1, float []a2)
 	return delta;
 }
 
-bool skip_due_to_loss(int client)
+bool skip_due_to_loss(int client, float threshold = 0.5, NetFlow flow = NetFlow_Both)
 {
 	if (icvar[CVAR_LOSS_FIX])
-		return GetClientAvgLoss(client, NetFlow_Both) > 0.5;
+		return GetClientAvgLoss(client, flow) > threshold;
 
 	return false;
 }

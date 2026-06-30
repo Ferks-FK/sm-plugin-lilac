@@ -79,7 +79,7 @@ public Action timer_check_speedhack(Handle timer)
 
         /* High packet loss can cause the server to process queued cmds in
         * bursts, which would trigger false positives. */
-        if (skip_due_to_loss(client))
+        if (skip_due_to_loss(client, 0.15, NetFlow_Incoming))
             continue;
 
         /* High incoming choke causes burst processing of queued usercmds,
