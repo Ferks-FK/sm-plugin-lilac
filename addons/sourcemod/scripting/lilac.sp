@@ -81,6 +81,7 @@ public APLRes AskPluginLoad2(Handle hMyself, bool bLate, char[] sError, int err_
         MarkNativeAsOptional("Updater_AddPlugin");
         MarkNativeAsOptional("Updater_RemovePlugin");
         MarkNativeAsOptional("IRC_MsgFlaggedChannels");
+        MarkNativeAsOptional("AR_GetMatchID");
 
         /* Build the log path for the file in case the user has overridden sm_basepath. */
         BuildPath(Path_SM, log_file, sizeof(log_file), "logs/lilac.log");
@@ -166,39 +167,54 @@ public void OnPluginStart()
         lilac_log_first_time_setup();
 }
 
+public void OnMapStart()
+{
+    lilac_server_lag_on_map_start();
+}
+
+public void OnGameFrame()
+{
+    lilac_calc_server_tps();
+}
+
 public void OnAllPluginsLoaded()
 {
-	sourcebanspp_exist = LibraryExists("sourcebans++");
-	sourcebans_exist = LibraryExists("sourcebans");
-	materialadmin_exist = LibraryExists("materialadmin");
+    sourcebanspp_exist = LibraryExists("sourcebans++");
+    sourcebans_exist = LibraryExists("sourcebans");
+    materialadmin_exist = LibraryExists("materialadmin");
+    autorecorder_exist = LibraryExists("autorecorder");
 
-	if (LibraryExists("updater"))
-		lilac_update_url();
+    if (LibraryExists("updater"))
+        lilac_update_url();
 
-	/* Startup message. */
-	PrintToServer("[Little Anti-Cheat %s] Successfully loaded!", PLUGIN_VERSION);
+    /* Startup message. */
+    PrintToServer("[Little Anti-Cheat %s] Successfully loaded!", PLUGIN_VERSION);
 }
 
 public void OnLibraryAdded(const char []name)
 {
-	if (StrEqual(name, "sourcebans++"))
-		sourcebanspp_exist = true;
-	else if (StrEqual(name, "sourcebans"))
-		sourcebans_exist = true;
-	else if (StrEqual(name, "materialadmin"))
-		materialadmin_exist = true;
-	else if (StrEqual(name, "updater"))
-		lilac_update_url();
+    if (StrEqual(name, "sourcebans++"))
+        sourcebanspp_exist = true;
+    else if (StrEqual(name, "sourcebans"))
+        sourcebans_exist = true;
+    else if (StrEqual(name, "materialadmin"))
+        materialadmin_exist = true;
+    else if (StrEqual(name, "autorecorder"))
+        autorecorder_exist = true;
+    else if (StrEqual(name, "updater"))
+        lilac_update_url();
 }
 
 public void OnLibraryRemoved(const char []name)
 {
-	if (StrEqual(name, "sourcebans++"))
-		sourcebanspp_exist = false;
-	else if (StrEqual(name, "sourcebans"))
-		sourcebans_exist = false;
-	else if (StrEqual(name, "materialadmin"))
-		materialadmin_exist = false;
+    if (StrEqual(name, "sourcebans++"))
+        sourcebanspp_exist = false;
+    else if (StrEqual(name, "sourcebans"))
+        sourcebans_exist = false;
+    else if (StrEqual(name, "materialadmin"))
+        materialadmin_exist = false;
+    else if (StrEqual(name, "autorecorder"))
+        autorecorder_exist = false;
 }
 
 void lilac_update_url()

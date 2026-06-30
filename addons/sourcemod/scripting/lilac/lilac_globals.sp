@@ -25,42 +25,43 @@
 #define CVAR_WELCOME                1
 #define CVAR_SB                     2
 #define CVAR_MA                     3
-#define CVAR_LOG                    4
-#define CVAR_LOG_EXTRA              5
-#define CVAR_LOG_MISC               6
-#define CVAR_LOG_DATE               7
-#define CVAR_BAN                    8
-#define CVAR_BAN_LENGTH             9
-#define CVAR_BAN_LANGUAGE          10
-#define CVAR_CHEAT_WARN            11
-#define CVAR_ANGLES                12
-#define CVAR_PATCH_ANGLES          13
-#define CVAR_CHAT                  14
-#define CVAR_CONVAR                15
-#define CVAR_NOLERP                16
-#define CVAR_BHOP                  17
-#define CVAR_AIMBOT                18
-#define CVAR_AIMBOT_AUTOSHOOT      19
-#define CVAR_AIMLOCK               20
-#define CVAR_AIMLOCK_LIGHT         21
-#define CVAR_BACKTRACK_PATCH       22
-#define CVAR_BACKTRACK_TOLERANCE   23
-#define CVAR_MAX_PING              24
-#define CVAR_MAX_PING_SPEC         25
-#define CVAR_MAX_LERP              26
-#define CVAR_MACRO                 27
-#define CVAR_MACRO_WARNING         28
-#define CVAR_MACRO_DEAL_METHOD     29
-#define CVAR_MACRO_MODE            30
-#define CVAR_FILTER_NAME           31
-#define CVAR_FILTER_CHAT           32
-#define CVAR_LOSS_FIX              33
-#define CVAR_AUTO_UPDATE           34
-#define CVAR_SOURCEIRC             35
-#define CVAR_DATABASE              36
-#define CVAR_SPEEDHACK             37
-#define CVAR_INFECTED_DMG          38
-#define CVAR_MAX                   39
+#define CVAR_AR                     4
+#define CVAR_LOG                    5
+#define CVAR_LOG_EXTRA              6
+#define CVAR_LOG_MISC               7
+#define CVAR_LOG_DATE               8
+#define CVAR_BAN                    9
+#define CVAR_BAN_LENGTH             10
+#define CVAR_BAN_LANGUAGE          11
+#define CVAR_CHEAT_WARN            12
+#define CVAR_ANGLES                13
+#define CVAR_PATCH_ANGLES          14
+#define CVAR_CHAT                  15
+#define CVAR_CONVAR                16
+#define CVAR_NOLERP                17
+#define CVAR_BHOP                  18
+#define CVAR_AIMBOT                19
+#define CVAR_AIMBOT_AUTOSHOOT      20
+#define CVAR_AIMLOCK               21
+#define CVAR_AIMLOCK_LIGHT         22
+#define CVAR_BACKTRACK_PATCH       23
+#define CVAR_BACKTRACK_TOLERANCE   24
+#define CVAR_MAX_PING              25
+#define CVAR_MAX_PING_SPEC         26
+#define CVAR_MAX_LERP              27
+#define CVAR_MACRO                 28
+#define CVAR_MACRO_WARNING         29
+#define CVAR_MACRO_DEAL_METHOD     30
+#define CVAR_MACRO_MODE            31
+#define CVAR_FILTER_NAME           32
+#define CVAR_FILTER_CHAT           33
+#define CVAR_LOSS_FIX              34
+#define CVAR_AUTO_UPDATE           35
+#define CVAR_SOURCEIRC             36
+#define CVAR_DATABASE              37
+#define CVAR_SPEEDHACK             38
+#define CVAR_INFECTED_DMG          39
+#define CVAR_MAX                   40
 
 #define BHOP_INDEX_MIN     0
 #define BHOP_INDEX_JUMP    1
@@ -91,7 +92,7 @@
 
 #define AIMLOCK_BAN_MIN   5
 
-#define INFECTED_DMG_BAN_MIN 5
+#define INFECTED_DMG_BAN_MIN 3
 
 #define AIMBOT_BAN_MIN           5
 #define AIMBOT_MAX_TOTAL_DELTA   (180.0 * 2.5)
@@ -154,6 +155,7 @@ Handle forwardhandleallow = INVALID_HANDLE;
 bool sourcebans_exist = false;
 bool sourcebanspp_exist = false;
 bool materialadmin_exist = false;
+bool autorecorder_exist = false;
 
 /* Logging.
  * Todo: Might wanna move a lot of this variables to
@@ -185,3 +187,4 @@ native Function SBBanPlayer(int client, int target, int time, const char[] reaso
 native Function SBPP_BanPlayer(int iAdmin, int iTarget, int iTime, const char[] sReason);
 native Function Updater_AddPlugin(const char[] url);
 native Function Updater_RemovePlugin();
+native bool AR_GetMatchID(char[] matchID, int maxlen);

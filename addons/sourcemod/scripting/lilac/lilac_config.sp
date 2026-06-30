@@ -26,6 +26,9 @@ void lilac_config_setup()
 	hcvar[CVAR_WELCOME] = new Convar("lilac_welcome", "0",
 		"Welcome connecting players saying that the server is protected.",
 		FCVAR_PROTECTED, true, 0.0, true, 1.0);
+	hcvar[CVAR_AR] = new Convar("lilac_autorecorder", "0",
+		"Enable AutoRecorder integration (Print the MatchID into logs via AutoRecorder, if it is installed).",
+		FCVAR_PROTECTED, true, 0.0, true, 1.0);
 	hcvar[CVAR_SB] = new Convar("lilac_sourcebans", "1",
 		"Ban players via sourcebans++ (If it isn't installed, it will default to basebans).",
 		FCVAR_PROTECTED, true, 0.0, true, 1.0);
@@ -344,50 +347,55 @@ static void print_current_bhop_settings()
 
 public Action lilac_ban_status(int args)
 {
-	int ban_type = 0;
-	char tmp[24];
+    int ban_type = 0;
+    char tmp[24];
 
-	PrintToServer("====[Little Anti-Cheat %s - Ban Status]====", PLUGIN_VERSION);
-	PrintToServer("Checking ban plugins and third party plugins:");
+    PrintToServer("====[Little Anti-Cheat %s - Ban Status]====", PLUGIN_VERSION);
+    PrintToServer("Checking ban plugins and third party plugins:");
 
-	PrintToServer("Material-Admin:");
-	PrintToServer("\tLoaded: %s", ((materialadmin_exist) ? "Yes" : "No"));
-	PrintToServer("\tNative Exists: %s", ((NATIVE_EXISTS("MABanPlayer")) ? "Yes" : "No"));
-	PrintToServer("\tConVar: lilac_materialadmin = %d", icvar[CVAR_MA]);
+    PrintToServer("AutoRecorder:");
+    PrintToServer("\tLoaded: %s", ((autorecorder_exist) ? "Yes" : "No"));
+    PrintToServer("\tNative Exists: %s", ((NATIVE_EXISTS("AR_GetMatchID")) ? "Yes" : "No"));
+    PrintToServer("\tConVar: lilac_autorecorder = %d", icvar[CVAR_AR]);
 
-	PrintToServer("Sourcebans++:");
-	PrintToServer("\tLoaded: %s", ((sourcebanspp_exist) ? "Yes" : "No"));
-	PrintToServer("\tNative Exists: %s", ((NATIVE_EXISTS("SBPP_BanPlayer")) ? "Yes" : "No"));
-	PrintToServer("\tConVar: lilac_sourcebans = %d", icvar[CVAR_SB]);
+    PrintToServer("Material-Admin:");
+    PrintToServer("\tLoaded: %s", ((materialadmin_exist) ? "Yes" : "No"));
+    PrintToServer("\tNative Exists: %s", ((NATIVE_EXISTS("MABanPlayer")) ? "Yes" : "No"));
+    PrintToServer("\tConVar: lilac_materialadmin = %d", icvar[CVAR_MA]);
 
-	PrintToServer("Sourcebans (Old):");
-	PrintToServer("\tLoaded: %s", ((sourcebans_exist) ? "Yes" : "No"));
-	PrintToServer("\tNative Exists: %s", ((NATIVE_EXISTS("SBBanPlayer")) ? "Yes" : "No"));
-	PrintToServer("\tConVar: lilac_sourcebans = %d", icvar[CVAR_SB]);
+    PrintToServer("Sourcebans++:");
+    PrintToServer("\tLoaded: %s", ((sourcebanspp_exist) ? "Yes" : "No"));
+    PrintToServer("\tNative Exists: %s", ((NATIVE_EXISTS("SBPP_BanPlayer")) ? "Yes" : "No"));
+    PrintToServer("\tConVar: lilac_sourcebans = %d", icvar[CVAR_SB]);
 
-	PrintToServer("SourceIRC:");
-	PrintToServer("\tNative Exists: %s", ((NATIVE_EXISTS("IRC_MsgFlaggedChannels")) ? "Yes" : "No"));
-	PrintToServer("\tConVar: lilac_sourceirc = %d", icvar[CVAR_SOURCEIRC]);
-	if (icvar[CVAR_SOURCEIRC] && NATIVE_EXISTS("IRC_MsgFlaggedChannels"))
-		IRC_MsgFlaggedChannels("lilac", "[LILAC] is active and logging to SourceIRC!");
+    PrintToServer("Sourcebans (Old):");
+    PrintToServer("\tLoaded: %s", ((sourcebans_exist) ? "Yes" : "No"));
+    PrintToServer("\tNative Exists: %s", ((NATIVE_EXISTS("SBBanPlayer")) ? "Yes" : "No"));
+    PrintToServer("\tConVar: lilac_sourcebans = %d", icvar[CVAR_SB]);
 
-	ban_type = ((icvar[CVAR_MA] && NATIVE_EXISTS("MABanPlayer")) ? 3 : 0);
-	if (!ban_type)
-		ban_type = ((icvar[CVAR_SB] && NATIVE_EXISTS("SBPP_BanPlayer")) ? 2 : 0);
-	if (!ban_type)
-		ban_type = (icvar[CVAR_SB] && NATIVE_EXISTS("SBBanPlayer"));
+    PrintToServer("SourceIRC:");
+    PrintToServer("\tNative Exists: %s", ((NATIVE_EXISTS("IRC_MsgFlaggedChannels")) ? "Yes" : "No"));
+    PrintToServer("\tConVar: lilac_sourceirc = %d", icvar[CVAR_SOURCEIRC]);
+    if (icvar[CVAR_SOURCEIRC] && NATIVE_EXISTS("IRC_MsgFlaggedChannels"))
+        IRC_MsgFlaggedChannels("lilac", "[LILAC] is active and logging to SourceIRC!");
 
-	switch (ban_type) {
-	case 0: { strcopy(tmp, sizeof(tmp), "BaseBans"); }
-	case 1: { strcopy(tmp, sizeof(tmp), "SourceBans (Old)"); }
-	case 2: { strcopy(tmp, sizeof(tmp), "SourceBans++"); }
-	case 3: { strcopy(tmp, sizeof(tmp), "Material-Admin"); }
-	default: return Plugin_Handled;
-	}
+    ban_type = ((icvar[CVAR_MA] && NATIVE_EXISTS("MABanPlayer")) ? 3 : 0);
+    if (!ban_type)
+        ban_type = ((icvar[CVAR_SB] && NATIVE_EXISTS("SBPP_BanPlayer")) ? 2 : 0);
+    if (!ban_type)
+        ban_type = (icvar[CVAR_SB] && NATIVE_EXISTS("SBBanPlayer"));
 
-	PrintToServer("\nBanning will go though %s.\n", tmp);
+    switch (ban_type) {
+    case 0: { strcopy(tmp, sizeof(tmp), "BaseBans"); }
+    case 1: { strcopy(tmp, sizeof(tmp), "SourceBans (Old)"); }
+    case 2: { strcopy(tmp, sizeof(tmp), "SourceBans++"); }
+    case 3: { strcopy(tmp, sizeof(tmp), "Material-Admin"); }
+    default: return Plugin_Handled;
+    }
 
-	return Plugin_Handled;
+    PrintToServer("\nBanning will go though %s.\n", tmp);
+
+    return Plugin_Handled;
 }
 
 public Action lilac_set_ban_length(int args)
@@ -602,6 +610,9 @@ public void cvar_change(ConVar convar, const char[] oldValue, const char[] newVa
     }
     else if (convar == hcvar[CVAR_WELCOME]) {
         icvar[CVAR_WELCOME] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_AR]) {
+        icvar[CVAR_AR] = StringToInt(newValue);
     }
     else if (convar == hcvar[CVAR_SB]) {
         icvar[CVAR_SB] = StringToInt(newValue);
