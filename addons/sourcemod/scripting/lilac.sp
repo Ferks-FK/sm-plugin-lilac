@@ -48,6 +48,7 @@
 #include "lilac/lilac_database.sp"
 #include "lilac/lilac_lerp.sp"
 #include "lilac/lilac_macro.sp"
+#include "lilac/lilac_network.sp"
 #include "lilac/lilac_ping.sp"
 #include "lilac/lilac_speedhack.sp"
 #include "lilac/lilac_infected_damage.sp"
@@ -141,6 +142,7 @@ public void OnPluginStart()
     CreateTimer(5.0, timer_check_lerp, _, TIMER_REPEAT);
     CreateTimer(1.0, timer_check_speedhack, _, TIMER_REPEAT);
     CreateTimer(0.1, timer_check_aimlock, _, TIMER_REPEAT);
+    CreateTimer(0.1, timer_sample_network, _, TIMER_REPEAT);
     CreateTimer(60.0 * 5.0, timer_decrement_macro, _, TIMER_REPEAT);
 
     tick_rate = RoundToNearest(1.0 / GetTickInterval());

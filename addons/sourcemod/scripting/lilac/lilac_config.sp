@@ -18,184 +18,187 @@
 
 void lilac_config_setup()
 {
-	ConVar tcvar;
+    ConVar tcvar;
 
-	hcvar[CVAR_ENABLE] = new Convar("lilac_enable", "1",
-		"Enable Little Anti-Cheat.",
-		FCVAR_PROTECTED, true, 0.0, true, 1.0);
-	hcvar[CVAR_WELCOME] = new Convar("lilac_welcome", "0",
-		"Welcome connecting players saying that the server is protected.",
-		FCVAR_PROTECTED, true, 0.0, true, 1.0);
-	hcvar[CVAR_AR] = new Convar("lilac_autorecorder", "0",
-		"Enable AutoRecorder integration (Print the MatchID into logs via AutoRecorder, if it is installed).",
-		FCVAR_PROTECTED, true, 0.0, true, 1.0);
-	hcvar[CVAR_SB] = new Convar("lilac_sourcebans", "1",
-		"Ban players via sourcebans++ (If it isn't installed, it will default to basebans).",
-		FCVAR_PROTECTED, true, 0.0, true, 1.0);
-	hcvar[CVAR_MA] = new Convar("lilac_materialadmin", "1",
-		"Ban players via Material-Admin (Fork of Sourcebans++. If it isn't installed, will default to sourcebans++ or basebans).",
-		FCVAR_PROTECTED, true, 0.0, true, 1.0);
-	hcvar[CVAR_SOURCEIRC] = new Convar("lilac_sourceirc", "1",
-		"Enable reflecting log messages to SourceIRC channels flagged with 'lilac', if SourceIRC is available.",
-		FCVAR_PROTECTED, true, 0.0, true, 1.0);
-	hcvar[CVAR_LOG] = new Convar("lilac_log", "1",
-		"Enable cheat logging.",
-		FCVAR_PROTECTED, true, 0.0, true, 1.0);
-	hcvar[CVAR_LOG_EXTRA] = new Convar("lilac_log_extra", "1",
-		"0 = Disabled.\n1 = Log extra information on player banned.\n2 = Log extra information on everything.",
-		FCVAR_PROTECTED, true, 0.0, true, 2.0);
-	hcvar[CVAR_LOG_MISC] = new Convar("lilac_log_misc", "0",
-		"Log when players are kicked for misc features, like interp exploits, too high ping and on convar response failure.",
-		FCVAR_PROTECTED, true, 0.0, true, 1.0);
-	hcvar[CVAR_LOG_DATE] = new Convar("lilac_log_date", "{year}/{month}/{day} {hour}:{minute}:{second}",
-		"Which date & time format to use when logging. Type: \"lilac_date_list\" for more info.",
-		FCVAR_PROTECTED, false, 0.0, false, 0.0);
-	hcvar[CVAR_BAN] = new Convar("lilac_ban", "1",
-		"Enable banning of cheaters, set to 0 if you want to test Lilac before fully trusting it with bans.",
-		FCVAR_PROTECTED, true, 0.0, true, 1.0);
-	hcvar[CVAR_BAN_LENGTH] = new Convar("lilac_ban_length", "0",
-		"How long bans should last in minutes (0 = forever).",
-		FCVAR_PROTECTED, true, 0.0, false, 0.0);
-	hcvar[CVAR_BAN_LANGUAGE] = new Convar("lilac_ban_language", "1",
-		"Ban reason language.\n0 = Use server's language.\n1 = Use the language of the cheater.",
-		FCVAR_PROTECTED, true, 0.0, true, 1.0);
-	hcvar[CVAR_CHEAT_WARN] = new Convar("lilac_cheat_warning", "1",
-		"Alert admins in chat about potential cheaters.",
-		FCVAR_PROTECTED, true, 0.0, true, 1.0);
-	hcvar[CVAR_ANGLES] = new Convar("lilac_angles", "1",
-		"Detect Angle-Cheats (Basic Anti-Aim, Legit Anti-Backstab and Duckspeed).\n-1 = Log only.\n0 = Disabled.\n1 = Enabled.",
-		FCVAR_PROTECTED, true, -1.0, true, 1.0);
-	hcvar[CVAR_PATCH_ANGLES] = new Convar("lilac_angles_patch", "1",
-		"Patch Angle-Cheats (Basic Anti-Aim, Legit Anti-Backstab and Duckspeed).",
-		FCVAR_PROTECTED, true, 0.0, true, 1.0);
-	hcvar[CVAR_CHAT] = new Convar("lilac_chatclear", "1",
-		"Detect Chat-Clear.\n-1 = Log only.\n0 = Disabled.\n1 = Enabled.",
-		FCVAR_PROTECTED, true, -1.0, true, 1.0);
-	hcvar[CVAR_CONVAR] = new Convar("lilac_convar", "1",
-		"Detect basic invalid ConVars.\n-1 = Log only.\n0 = Disabled.\n1 = Kick.\n2 = Ban.",
-		FCVAR_PROTECTED, true, -1.0, true, 2.0);
-	hcvar[CVAR_NOLERP] = new Convar("lilac_nolerp", "1",
-		"Detect NoLerp.\n-1 = Log only.\n0 = Disabled.\n1 = Enabled.",
-		FCVAR_PROTECTED, true, -1.0, true, 1.0);
-	hcvar[CVAR_BHOP] = new Convar("lilac_bhop", "5",
-		"Bhop detection mode (Negative values = log-only).\n0 = Disabled.\n1&2 = Reserved (Invalid).\n3 = Custom (unlocks lilac_bhop_set command).\n4 = Low.\n5 = Medium.\n6 = High.",
-		FCVAR_PROTECTED, true, -6.0, true, 6.0);
-	hcvar[CVAR_AIMBOT] = new Convar("lilac_aimbot", "5",
-		"Detect basic Aimbots.\n0 = Disabled.\n1 = Log only.\n5 or more = ban on n'th detection (Minimum possible is 5)",
-		FCVAR_PROTECTED, true, 0.0, false, 0.0);
-	hcvar[CVAR_AIMBOT_AUTOSHOOT] = new Convar("lilac_aimbot_autoshoot", "1",
-		"Detect Autoshoot.",
-		FCVAR_PROTECTED, true, 0.0, true, 1.0);
-	hcvar[CVAR_AIMLOCK] = new Convar("lilac_aimlock", "10",
-		"Detect Aimlock.\n0 = Disabled.\n1 = Log only.\n5 or more = ban on n'th detection (Minimum possible is 5).",
-		FCVAR_PROTECTED, true, 0.0, false, 0.0);
-	hcvar[CVAR_AIMLOCK_LIGHT] = new Convar("lilac_aimlock_light", "1",
-		"Only process players who show suspicious aiming behavior for aimlock detection.\n0 = Off (all players checked).\n1 = On (only suspicious players checked, recommended).",
-		FCVAR_PROTECTED, true, 0.0, true, 1.0);
-	hcvar[CVAR_BACKTRACK_PATCH] = new Convar("lilac_backtrack_patch", "0",
-		"Patch Backtrack.\n0 = Disabled (Recommended setting for SMAC compatibility).\n1 = Enabled.",
-		FCVAR_PROTECTED, true, 0.0, true, 1.0);
-	hcvar[CVAR_BACKTRACK_TOLERANCE] = new Convar("lilac_backtrack_tolerance", "0",
-		"How tolerant the backtrack patch will be of tickcount changes.\n0 = No tolerance (recommended).\n1+ = n ticks tolerant.",
-		FCVAR_PROTECTED, true, 0.0, true, 3.0);
-	hcvar[CVAR_MAX_PING] = new Convar("lilac_max_ping", "0",
-		"Ban players with too high of a ping for 3 minutes.\nThis is meant to deal with fakelatency, the ban length is just to prevent instant reconnects.\n0 = no ping limit, minimum possible is 100.",
-		FCVAR_PROTECTED, true, 0.0, true, 1000.0);
-	hcvar[CVAR_MAX_PING_SPEC] = new Convar("lilac_max_ping_spec", "0",
-		"Move players with a high ping to spectator and warn them after this many seconds (Minimum possible is 30).",
-		FCVAR_PROTECTED, true, 0.0, true, 90.0);
-	hcvar[CVAR_MAX_LERP] = new Convar("lilac_max_lerp", "105",
-		"Kicks players attempting to exploit interpolation, any interp higher than this value = kick.\nMinimum value possible = 105 (Default interp in games = 100).\n0 or less than 105 = Disabled.",
-		FCVAR_PROTECTED, true, 0.0, true, 510.0); /* 500 is max possible. */
-	hcvar[CVAR_MACRO] = new Convar("lilac_macro", "0",
-		"Detect macros.\n-1 = Log only.\n0 = Disabled.\n1 = Enabled.\n2 = Enabled, but no logging.",
-		FCVAR_PROTECTED, true, -1.0, true, 2.0);
-	hcvar[CVAR_MACRO_WARNING] = new Convar("lilac_macro_warning", "1",
-		"Warning mode for Macro detection:\n0 = No warning.\n1 = Warn player using macro.\n2 = Warn admins on server.\n3 = Warn everyone.",
-		FCVAR_PROTECTED, true, 0.0, true, 3.0);
-	hcvar[CVAR_MACRO_DEAL_METHOD] = new Convar("lilac_macro_method", "0",
-		"What to do with players detected of using macros:\n0 = Kick.\n1 = Ban.",
-		FCVAR_PROTECTED, true, 0.0, true, 1.0);
-	hcvar[CVAR_MACRO_MODE] = new Convar("lilac_macro_mode", "0",
-		"What types of macros to detect:\n0 = All.\n1 = Auto-Jump.\n2 = Auto-Shoot.",
-		FCVAR_PROTECTED, true, 0.0, true, 3.0);
-	hcvar[CVAR_FILTER_NAME] = new Convar("lilac_filter_name", "2",
-		"Filter invalid names (kicks players with invalid names).\n-1 = Log-Only.\n0 = Disabled.\n1 = Enabled, kick only.\n2 = Ban cheaters with newlines in names.",
-		FCVAR_PROTECTED, true, -1.0, true, 2.0);
-	hcvar[CVAR_FILTER_CHAT] = new Convar("lilac_filter_chat", "1",
-		"Filter invalid characters in chat (block chat messages).",
-		FCVAR_PROTECTED, true, 0.0, true, 1.0);
-	hcvar[CVAR_LOSS_FIX] = new Convar("lilac_loss_fix", "1",
-		"Ignore some cheat detections for players who have too much packet loss (bad connection to the server).",
-		FCVAR_PROTECTED, true, 0.0, true, 1.0);
-	hcvar[CVAR_AUTO_UPDATE] = new Convar("lilac_auto_update", "0",
-		"Automatically update Little Anti-Cheat.",
-		FCVAR_PROTECTED, true, 0.0, true, 1.0);
-	hcvar[CVAR_DATABASE] = new Convar("lilac_database", "",
-		"Database to log detections to.\nempty = don't log to database\ndatabase name = log to this database (MySQL & SQLite supported)",
-		FCVAR_PROTECTED);
-	hcvar[CVAR_SPEEDHACK] = new Convar("lilac_speedhack", "1",
-		"Detect Speedhack.\n0 = Disabled.\n1 = Log only.\n5 or more = ban on n'th detection (Minimum possible is 5).",
-		FCVAR_PROTECTED, true, 0.0, false, 0.0);
-	hcvar[CVAR_INFECTED_DMG] = new Convar("lilac_infected_damage", "1",
-		"Detect infected damage exploit (L4D2 only).\n0 = Disabled.\n1 = Log only.\n5 or more = ban on n'th detection (Minimum possible is 5).",
-		FCVAR_PROTECTED, true, 0.0, false, 0.0);
+    hcvar[CVAR_ENABLE] = new Convar("lilac_enable", "1",
+        "Enable Little Anti-Cheat.",
+        FCVAR_PROTECTED, true, 0.0, true, 1.0);
+    hcvar[CVAR_WELCOME] = new Convar("lilac_welcome", "0",
+        "Welcome connecting players saying that the server is protected.",
+        FCVAR_PROTECTED, true, 0.0, true, 1.0);
+    hcvar[CVAR_AR] = new Convar("lilac_autorecorder", "0",
+        "Enable AutoRecorder integration (Print the MatchID into logs via AutoRecorder, if it is installed).",
+        FCVAR_PROTECTED, true, 0.0, true, 1.0);
+    hcvar[CVAR_SB] = new Convar("lilac_sourcebans", "1",
+        "Ban players via sourcebans++ (If it isn't installed, it will default to basebans).",
+        FCVAR_PROTECTED, true, 0.0, true, 1.0);
+    hcvar[CVAR_MA] = new Convar("lilac_materialadmin", "1",
+        "Ban players via Material-Admin (Fork of Sourcebans++. If it isn't installed, will default to sourcebans++ or basebans).",
+        FCVAR_PROTECTED, true, 0.0, true, 1.0);
+    hcvar[CVAR_SOURCEIRC] = new Convar("lilac_sourceirc", "1",
+        "Enable reflecting log messages to SourceIRC channels flagged with 'lilac', if SourceIRC is available.",
+        FCVAR_PROTECTED, true, 0.0, true, 1.0);
+    hcvar[CVAR_LOG] = new Convar("lilac_log", "1",
+        "Enable cheat logging.",
+        FCVAR_PROTECTED, true, 0.0, true, 1.0);
+    hcvar[CVAR_LOG_EXTRA] = new Convar("lilac_log_extra", "1",
+        "0 = Disabled.\n1 = Log extra information on player banned.\n2 = Log extra information on everything.",
+        FCVAR_PROTECTED, true, 0.0, true, 2.0);
+    hcvar[CVAR_LOG_MISC] = new Convar("lilac_log_misc", "0",
+        "Log when players are kicked for misc features, like interp exploits, too high ping and on convar response failure.",
+        FCVAR_PROTECTED, true, 0.0, true, 1.0);
+    hcvar[CVAR_LOG_DATE] = new Convar("lilac_log_date", "{year}/{month}/{day} {hour}:{minute}:{second}",
+        "Which date & time format to use when logging. Type: \"lilac_date_list\" for more info.",
+        FCVAR_PROTECTED, false, 0.0, false, 0.0);
+    hcvar[CVAR_BAN] = new Convar("lilac_ban", "1",
+        "Enable banning of cheaters, set to 0 if you want to test Lilac before fully trusting it with bans.",
+        FCVAR_PROTECTED, true, 0.0, true, 1.0);
+    hcvar[CVAR_BAN_LENGTH] = new Convar("lilac_ban_length", "0",
+        "How long bans should last in minutes (0 = forever).",
+        FCVAR_PROTECTED, true, 0.0, false, 0.0);
+    hcvar[CVAR_BAN_LANGUAGE] = new Convar("lilac_ban_language", "1",
+        "Ban reason language.\n0 = Use server's language.\n1 = Use the language of the cheater.",
+        FCVAR_PROTECTED, true, 0.0, true, 1.0);
+    hcvar[CVAR_CHEAT_WARN] = new Convar("lilac_cheat_warning", "1",
+        "Alert admins in chat about potential cheaters.",
+        FCVAR_PROTECTED, true, 0.0, true, 1.0);
+    hcvar[CVAR_ANGLES] = new Convar("lilac_angles", "1",
+        "Detect Angle-Cheats (Basic Anti-Aim, Legit Anti-Backstab and Duckspeed).\n-1 = Log only.\n0 = Disabled.\n1 = Enabled.",
+        FCVAR_PROTECTED, true, -1.0, true, 1.0);
+    hcvar[CVAR_PATCH_ANGLES] = new Convar("lilac_angles_patch", "1",
+        "Patch Angle-Cheats (Basic Anti-Aim, Legit Anti-Backstab and Duckspeed).",
+        FCVAR_PROTECTED, true, 0.0, true, 1.0);
+    hcvar[CVAR_CHAT] = new Convar("lilac_chatclear", "1",
+        "Detect Chat-Clear.\n-1 = Log only.\n0 = Disabled.\n1 = Enabled.",
+        FCVAR_PROTECTED, true, -1.0, true, 1.0);
+    hcvar[CVAR_CONVAR] = new Convar("lilac_convar", "1",
+        "Detect basic invalid ConVars.\n-1 = Log only.\n0 = Disabled.\n1 = Kick.\n2 = Ban.",
+        FCVAR_PROTECTED, true, -1.0, true, 2.0);
+    hcvar[CVAR_NOLERP] = new Convar("lilac_nolerp", "1",
+        "Detect NoLerp.\n-1 = Log only.\n0 = Disabled.\n1 = Enabled.",
+        FCVAR_PROTECTED, true, -1.0, true, 1.0);
+    hcvar[CVAR_BHOP] = new Convar("lilac_bhop", "5",
+        "Bhop detection mode (Negative values = log-only).\n0 = Disabled.\n1&2 = Reserved (Invalid).\n3 = Custom (unlocks lilac_bhop_set command).\n4 = Low.\n5 = Medium.\n6 = High.",
+        FCVAR_PROTECTED, true, -6.0, true, 6.0);
+    hcvar[CVAR_AIMBOT] = new Convar("lilac_aimbot", "5",
+        "Detect basic Aimbots.\n0 = Disabled.\n1 = Log only.\n5 or more = ban on n'th detection (Minimum possible is 5)",
+        FCVAR_PROTECTED, true, 0.0, false, 0.0);
+    hcvar[CVAR_AIMBOT_AUTOSHOOT] = new Convar("lilac_aimbot_autoshoot", "1",
+        "Detect Autoshoot.",
+        FCVAR_PROTECTED, true, 0.0, true, 1.0);
+    hcvar[CVAR_AIMLOCK] = new Convar("lilac_aimlock", "10",
+        "Detect Aimlock.\n0 = Disabled.\n1 = Log only.\n5 or more = ban on n'th detection (Minimum possible is 5).",
+        FCVAR_PROTECTED, true, 0.0, false, 0.0);
+    hcvar[CVAR_AIMLOCK_LIGHT] = new Convar("lilac_aimlock_light", "1",
+        "Only process players who show suspicious aiming behavior for aimlock detection.\n0 = Off (all players checked).\n1 = On (only suspicious players checked, recommended).",
+        FCVAR_PROTECTED, true, 0.0, true, 1.0);
+    hcvar[CVAR_BACKTRACK_PATCH] = new Convar("lilac_backtrack_patch", "0",
+        "Patch Backtrack.\n0 = Disabled (Recommended setting for SMAC compatibility).\n1 = Enabled.",
+        FCVAR_PROTECTED, true, 0.0, true, 1.0);
+    hcvar[CVAR_BACKTRACK_TOLERANCE] = new Convar("lilac_backtrack_tolerance", "0",
+        "How tolerant the backtrack patch will be of tickcount changes.\n0 = No tolerance (recommended).\n1+ = n ticks tolerant.",
+        FCVAR_PROTECTED, true, 0.0, true, 3.0);
+    hcvar[CVAR_MAX_PING] = new Convar("lilac_max_ping", "0",
+        "Ban players with too high of a ping for 3 minutes.\nThis is meant to deal with fakelatency, the ban length is just to prevent instant reconnects.\n0 = no ping limit, minimum possible is 100.",
+        FCVAR_PROTECTED, true, 0.0, true, 1000.0);
+    hcvar[CVAR_MAX_PING_SPEC] = new Convar("lilac_max_ping_spec", "0",
+        "Move players with a high ping to spectator and warn them after this many seconds (Minimum possible is 30).",
+        FCVAR_PROTECTED, true, 0.0, true, 90.0);
+    hcvar[CVAR_MAX_LERP] = new Convar("lilac_max_lerp", "105",
+        "Kicks players attempting to exploit interpolation, any interp higher than this value = kick.\nMinimum value possible = 105 (Default interp in games = 100).\n0 or less than 105 = Disabled.",
+        FCVAR_PROTECTED, true, 0.0, true, 510.0); /* 500 is max possible. */
+    hcvar[CVAR_MACRO] = new Convar("lilac_macro", "0",
+        "Detect macros.\n-1 = Log only.\n0 = Disabled.\n1 = Enabled.\n2 = Enabled, but no logging.",
+        FCVAR_PROTECTED, true, -1.0, true, 2.0);
+    hcvar[CVAR_MACRO_WARNING] = new Convar("lilac_macro_warning", "1",
+        "Warning mode for Macro detection:\n0 = No warning.\n1 = Warn player using macro.\n2 = Warn admins on server.\n3 = Warn everyone.",
+        FCVAR_PROTECTED, true, 0.0, true, 3.0);
+    hcvar[CVAR_MACRO_DEAL_METHOD] = new Convar("lilac_macro_method", "0",
+        "What to do with players detected of using macros:\n0 = Kick.\n1 = Ban.",
+        FCVAR_PROTECTED, true, 0.0, true, 1.0);
+    hcvar[CVAR_MACRO_MODE] = new Convar("lilac_macro_mode", "0",
+        "What types of macros to detect:\n0 = All.\n1 = Auto-Jump.\n2 = Auto-Shoot.",
+        FCVAR_PROTECTED, true, 0.0, true, 3.0);
+    hcvar[CVAR_FILTER_NAME] = new Convar("lilac_filter_name", "2",
+        "Filter invalid names (kicks players with invalid names).\n-1 = Log-Only.\n0 = Disabled.\n1 = Enabled, kick only.\n2 = Ban cheaters with newlines in names.",
+        FCVAR_PROTECTED, true, -1.0, true, 2.0);
+    hcvar[CVAR_FILTER_CHAT] = new Convar("lilac_filter_chat", "1",
+        "Filter invalid characters in chat (block chat messages).",
+        FCVAR_PROTECTED, true, 0.0, true, 1.0);
+    hcvar[CVAR_LOSS_FIX] = new Convar("lilac_loss_fix", "1",
+        "Ignore some cheat detections for players who have too much packet loss (bad connection to the server).",
+        FCVAR_PROTECTED, true, 0.0, true, 1.0);
+    hcvar[CVAR_NET_VETO] = new Convar("lilac_network_veto", "1",
+        "Veto Aimbot & Aimlock detections when the player's connection makes timing-based analysis unreliable (ping, jitter, packet loss or choke). Vetoed detections are still logged.",
+        FCVAR_PROTECTED, true, 0.0, true, 1.0);
+    hcvar[CVAR_AUTO_UPDATE] = new Convar("lilac_auto_update", "0",
+        "Automatically update Little Anti-Cheat.",
+        FCVAR_PROTECTED, true, 0.0, true, 1.0);
+    hcvar[CVAR_DATABASE] = new Convar("lilac_database", "",
+        "Database to log detections to.\nempty = don't log to database\ndatabase name = log to this database (MySQL & SQLite supported)",
+        FCVAR_PROTECTED);
+    hcvar[CVAR_SPEEDHACK] = new Convar("lilac_speedhack", "1",
+        "Detect Speedhack.\n0 = Disabled.\n1 = Log only.\n5 or more = ban on n'th detection (Minimum possible is 5).",
+        FCVAR_PROTECTED, true, 0.0, false, 0.0);
+    hcvar[CVAR_INFECTED_DMG] = new Convar("lilac_infected_damage", "1",
+        "Detect infected damage exploit (L4D2 only).\n0 = Disabled.\n1 = Log only.\n5 or more = ban on n'th detection (Minimum possible is 5).",
+        FCVAR_PROTECTED, true, 0.0, false, 0.0);
 
-	for (int i = 0; i < CVAR_MAX; i++) {
-		if (i != CVAR_LOG_DATE)
-			icvar[i] = hcvar[i].IntValue;
+    for (int i = 0; i < CVAR_MAX; i++) {
+        if (i != CVAR_LOG_DATE)
+            icvar[i] = hcvar[i].IntValue;
 
-		hcvar[i].AddChangeHook(cvar_change);
-	}
+        hcvar[i].AddChangeHook(cvar_change);
+    }
 
-	if ((tcvar = FindConVar("sv_maxupdaterate")) != null) {
-		tcvar.AddChangeHook(cvar_change);
-		lilac_lerp_maxupdaterate_changed(tcvar.IntValue);
-	}
-	else {
-		/* Assume the value is 0 if we can't fetch it. */
-		lilac_lerp_maxupdaterate_changed(0);
-	}
+    if ((tcvar = FindConVar("sv_maxupdaterate")) != null) {
+        tcvar.AddChangeHook(cvar_change);
+        lilac_lerp_maxupdaterate_changed(tcvar.IntValue);
+    }
+    else {
+        /* Assume the value is 0 if we can't fetch it. */
+        lilac_lerp_maxupdaterate_changed(0);
+    }
 
-	/* If the server allows clients to set the interp ratio to
-	 *     whatever they want, then false positives become possible.
-	 * Thanks RoseTheFox / Bud for reporting this :) */
-	if ((tcvar = FindConVar("sv_client_min_interp_ratio")) != null) {
-		tcvar.AddChangeHook(cvar_change);
-		lilac_lerp_ratio_changed(tcvar.IntValue);
+    /* If the server allows clients to set the interp ratio to
+    *     whatever they want, then false positives become possible.
+    * Thanks RoseTheFox / Bud for reporting this :) */
+    if ((tcvar = FindConVar("sv_client_min_interp_ratio")) != null) {
+        tcvar.AddChangeHook(cvar_change);
+        lilac_lerp_ratio_changed(tcvar.IntValue);
 
-		if ((tcvar = FindConVar("sv_client_max_interp_ratio")) != null) {
-			tcvar.AddChangeHook(cvar_change);
-			lilac_lerp_ratio_changed(tcvar.IntValue);
-		}
-		else {
-			lilac_lerp_ratio_changed(0);
-		}
-	}
-	else {
-		lilac_lerp_ratio_changed(0);
-	}
+        if ((tcvar = FindConVar("sv_client_max_interp_ratio")) != null) {
+            tcvar.AddChangeHook(cvar_change);
+            lilac_lerp_ratio_changed(tcvar.IntValue);
+        }
+        else {
+            lilac_lerp_ratio_changed(0);
+        }
+    }
+    else {
+        lilac_lerp_ratio_changed(0);
+    }
 
-	if ((tcvar = FindConVar("sv_cheats")) != null) {
-		tcvar.AddChangeHook(cvar_change);
-		sv_cheats = tcvar.IntValue;
-	}
-	else {
-		sv_cheats = 1;
-	}
+    if ((tcvar = FindConVar("sv_cheats")) != null) {
+        tcvar.AddChangeHook(cvar_change);
+        sv_cheats = tcvar.IntValue;
+    }
+    else {
+        sv_cheats = 1;
+    }
 
-	RegServerCmd("lilac_date_list", lilac_date_list, "Lists date formatting options", 0);
-	RegServerCmd("lilac_set_ban_length", lilac_set_ban_length, "Sets custom ban lengths for specific cheats.", 0);
-	RegServerCmd("lilac_get_bans_length", lilac_get_bans_length, "Shows current ban lengths for all cheat types.", 0);
-	RegServerCmd("lilac_ban_status", lilac_ban_status, "Prints banning status to server console.", 0);
-	RegServerCmd("lilac_bhop_set", lilac_bhop_set, "Sets Custom Bhop settings", 0);
+    RegServerCmd("lilac_date_list", lilac_date_list, "Lists date formatting options", 0);
+    RegServerCmd("lilac_set_ban_length", lilac_set_ban_length, "Sets custom ban lengths for specific cheats.", 0);
+    RegServerCmd("lilac_get_bans_length", lilac_get_bans_length, "Shows current ban lengths for all cheat types.", 0);
+    RegServerCmd("lilac_ban_status", lilac_ban_status, "Prints banning status to server console.", 0);
+    RegServerCmd("lilac_bhop_set", lilac_bhop_set, "Sets Custom Bhop settings", 0);
 
-	/* Legacy check, execute old config location.
-	 * Uses github.com/kidfearless/Auto-Exec-Config-Class */
-	if (FileExists("cfg/lilac_config.cfg", false, NULL_STRING))
-		Convar.CreateConfig("lilac_config", "");
-	else
-		Convar.CreateConfig("lilac_config", "sourcemod");
+    /* Legacy check, execute old config location.
+    * Uses github.com/kidfearless/Auto-Exec-Config-Class */
+    if (FileExists("cfg/lilac_config.cfg", false, NULL_STRING))
+        Convar.CreateConfig("lilac_config", "");
+    else
+        Convar.CreateConfig("lilac_config", "sourcemod");
 }
 
 public void OnConfigsExecuted()
@@ -743,6 +746,12 @@ public void cvar_change(ConVar convar, const char[] oldValue, const char[] newVa
     }
     else if (convar == hcvar[CVAR_LOSS_FIX]) {
         icvar[CVAR_LOSS_FIX] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_NET_VETO]) {
+        icvar[CVAR_NET_VETO] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_SPEEDHACK]) {
+        icvar[CVAR_SPEEDHACK] = StringToInt(newValue);
     }
     else if (convar == hcvar[CVAR_AUTO_UPDATE]) {
         icvar[CVAR_AUTO_UPDATE] = StringToInt(newValue);

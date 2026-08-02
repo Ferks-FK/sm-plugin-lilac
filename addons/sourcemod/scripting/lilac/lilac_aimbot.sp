@@ -380,14 +380,7 @@ public Action timer_check_aimbot(Handle timer, DataPack pack)
             flag_jitter = true;
     }
 
-    if (skip_due_to_loss(client)) {
-        skip_autoshoot = true;
-        skip_repeat = true;
-        detected = 0;
-        flag_smooth = false;
-        flag_jitter = false;
-        total_delta = 0.0;
-    }
+    bool net_vetoed = lilac_network_vetoed(client);
 
     /* Angle-repeat test. */
     if (skip_repeat == false) {
@@ -446,74 +439,102 @@ public Action timer_check_aimbot(Handle timer, DataPack pack)
     if (flag_jitter) log_flags |= AIMBOT_FLAG_JITTER;
 
     if (detected || total_delta > AIMBOT_MAX_TOTAL_DELTA)
-        lilac_detected_aimbot(client, delta, total_delta, log_flags);
+        lilac_detected_aimbot(client, delta, total_delta, log_flags, net_vetoed);
 
     return Plugin_Continue;
 }
 
-static void lilac_detected_aimbot(int client, float delta, float td, int flags)
+static void lilac_detected_aimbot(int client, float delta, float td, int flags, bool net_vetoed)
 {
-	if (playerinfo_banned_flags[client][CHEAT_AIMBOT])
-		return;
+    if (playerinfo_banned_flags[client][CHEAT_AIMBOT])
+        return;
 
-	if (lilac_forward_allow_cheat_detection(client, CHEAT_AIMBOT) == false)
-		return;
+    if (lilac_forward_allow_cheat_detection(client, CHEAT_AIMBOT) == false)
+        return;
 
-	CreateTimer(600.0, timer_decrement_aimbot, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE);
+    char sNet[256];
+    sNet[0] = '\0';
 
-	char sDetails[512];
-	Format(sDetails, sizeof(sDetails),
-			"Detection: %d | Delta: %.0f | TotalDelta: %.0f | Detected:%s%s%s%s%s%s%s",
-			aimbot_detection[client], delta, td,
-			((flags & AIMBOT_FLAG_SNAP)      ? " Aim-Snap"        : ""),
-			((flags & AIMBOT_FLAG_SNAP2)     ? " Aim-Snap2"       : ""),
-			((flags & AIMBOT_FLAG_AUTOSHOOT) ? " Autoshoot"       : ""),
-			((flags & AIMBOT_FLAG_REPEAT)    ? " Angle-Repeat"    : ""),
-			((flags & AIMBOT_FLAG_SMOOTH)    ? " Smooth-Converge" : ""),
-			((flags & AIMBOT_FLAG_JITTER)    ? " Jitter"          : ""),
-			((td > AIMBOT_MAX_TOTAL_DELTA)   ? " Total-Delta"     : ""));
+    if (net_vetoed) {
+        char sNetData[192];
+        lilac_network_format(client, sNetData, sizeof(sNetData));
+        Format(sNet, sizeof(sNet), " | NETWORK VETO {%s}", sNetData);
+    }
 
-	lilac_save_player_details(client, sDetails);
-	lilac_forward_client_cheat(client, CHEAT_AIMBOT);
+    char sDetails[512];
+    Format(sDetails, sizeof(sDetails),
+            "Detection: %d | Delta: %.0f | TotalDelta: %.0f | Detected:%s%s%s%s%s%s%s%s",
+            aimbot_detection[client], delta, td,
+            ((flags & AIMBOT_FLAG_SNAP)      ? " Aim-Snap"        : ""),
+            ((flags & AIMBOT_FLAG_SNAP2)     ? " Aim-Snap2"       : ""),
+            ((flags & AIMBOT_FLAG_AUTOSHOOT) ? " Autoshoot"       : ""),
+            ((flags & AIMBOT_FLAG_REPEAT)    ? " Angle-Repeat"    : ""),
+            ((flags & AIMBOT_FLAG_SMOOTH)    ? " Smooth-Converge" : ""),
+            ((flags & AIMBOT_FLAG_JITTER)    ? " Jitter"          : ""),
+            ((td > AIMBOT_MAX_TOTAL_DELTA)   ? " Total-Delta"     : ""),
+            sNet);
 
-	/* Don't log the first detection. */
-	if (++aimbot_detection[client] < 2)
-		return;
+    lilac_save_player_details(client, sDetails);
 
-	if (icvar[CVAR_CHEAT_WARN])
-		lilac_warn_admins(client, CHEAT_AIMBOT, aimbot_detection[client]);
+    /* Vetoed: log the evidence and the reason, then stop.
+    * No counter increment, no forward, no database entry, no ban. */
+    if (net_vetoed) {
+        if (icvar[CVAR_LOG]) {
+            lilac_log_setup_client(client);
+            Format(line_buffer, sizeof(line_buffer),
+                "%s triggered an aimbot detection that was vetoed by network conditions (%s).",
+                line_buffer, sDetails);
+            lilac_log(true);
 
-	if (icvar[CVAR_LOG]) {
-		lilac_log_setup_client(client);
-		Format(line_buffer, sizeof(line_buffer),
-			"%s is suspected of using an aimbot (%s).",
-			line_buffer, sDetails);
+            if (icvar[CVAR_LOG_EXTRA] == 2)
+                lilac_log_extra(client);
+        }
 
-		lilac_log(true);
+        return;
+    }
 
-		if (icvar[CVAR_LOG_EXTRA] == 2)
-			lilac_log_extra(client);
-	}
-	database_log(client, "aimbot", aimbot_detection[client], float(flags), td);
+    CreateTimer(600.0, timer_decrement_aimbot, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE);
 
-	if (aimbot_detection[client] >= icvar[CVAR_AIMBOT]
-		&& icvar[CVAR_AIMBOT] >= AIMBOT_BAN_MIN) {
+    lilac_forward_client_cheat(client, CHEAT_AIMBOT);
 
-		if (icvar[CVAR_LOG]) {
-			lilac_log_setup_client(client);
-			Format(line_buffer, sizeof(line_buffer),
-				"%s was banned for Aimbot.", line_buffer);
+    /* Don't log the first detection. */
+    if (++aimbot_detection[client] < 2)
+        return;
 
-			lilac_log(true);
+    if (icvar[CVAR_CHEAT_WARN])
+        lilac_warn_admins(client, CHEAT_AIMBOT, aimbot_detection[client]);
 
-			if (icvar[CVAR_LOG_EXTRA])
-				lilac_log_extra(client);
-		}
-		database_log(client, "aimbot", DATABASE_BAN);
+    if (icvar[CVAR_LOG]) {
+        lilac_log_setup_client(client);
+        Format(line_buffer, sizeof(line_buffer),
+            "%s is suspected of using an aimbot (%s).",
+            line_buffer, sDetails);
 
-		playerinfo_banned_flags[client][CHEAT_AIMBOT] = true;
-		lilac_ban_client(client, CHEAT_AIMBOT);
-	}
+        lilac_log(true);
+
+        if (icvar[CVAR_LOG_EXTRA] == 2)
+            lilac_log_extra(client);
+    }
+    database_log(client, "aimbot", aimbot_detection[client], float(flags), td);
+
+    if (aimbot_detection[client] >= icvar[CVAR_AIMBOT]
+        && icvar[CVAR_AIMBOT] >= AIMBOT_BAN_MIN) {
+
+        if (icvar[CVAR_LOG]) {
+            lilac_log_setup_client(client);
+            Format(line_buffer, sizeof(line_buffer),
+                "%s was banned for Aimbot.", line_buffer);
+
+            lilac_log(true);
+
+            if (icvar[CVAR_LOG_EXTRA])
+                lilac_log_extra(client);
+        }
+        database_log(client, "aimbot", DATABASE_BAN);
+
+        playerinfo_banned_flags[client][CHEAT_AIMBOT] = true;
+        lilac_ban_client(client, CHEAT_AIMBOT);
+    }
 }
 
 public Action timer_decrement_aimbot(Handle timer, int userid)

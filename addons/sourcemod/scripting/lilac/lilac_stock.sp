@@ -85,37 +85,38 @@ bool bullettime_can_shoot(int client)
 
 void lilac_reset_client(int client)
 {
-	lilac_backtrack_reset_client(client);
-	lilac_bhop_reset_client(client);
-	lilac_macro_reset_client(client);
-	lilac_aimbot_reset_client(client);
-	lilac_speedhack_reset_client(client);
-	lilac_infected_damage_reset_client(client);
-	lilac_ping_reset_client(client);
-	lilac_convar_reset_client(client);
-	lilac_lerp_reset_client(client);
+    lilac_backtrack_reset_client(client);
+    lilac_bhop_reset_client(client);
+    lilac_macro_reset_client(client);
+    lilac_aimbot_reset_client(client);
+    lilac_speedhack_reset_client(client);
+    lilac_infected_damage_reset_client(client);
+    lilac_ping_reset_client(client);
+    lilac_convar_reset_client(client);
+    lilac_lerp_reset_client(client);
+    lilac_network_reset_client(client);
 
-	playerinfo_index[client] = 0;
-	playerinfo_aimlock_sus[client] = 0;
-	playerinfo_aimlock[client] = 0;
-	playerinfo_time_bumpercart[client] = 0.0;
-	playerinfo_time_teleported[client] = 0.0;
-	playerinfo_time_aimlock[client] = 0.0;
-	playerinfo_time_process_aimlock[client] = 0.0;
-	Format(playerinfo_detected[client], sizeof(playerinfo_detected[]), "");
+    playerinfo_index[client] = 0;
+    playerinfo_aimlock_sus[client] = 0;
+    playerinfo_aimlock[client] = 0;
+    playerinfo_time_bumpercart[client] = 0.0;
+    playerinfo_time_teleported[client] = 0.0;
+    playerinfo_time_aimlock[client] = 0.0;
+    playerinfo_time_process_aimlock[client] = 0.0;
+    Format(playerinfo_detected[client], sizeof(playerinfo_detected[]), "");
 
-	for (int i = 0; i < CHEAT_MAX; i++) {
-		playerinfo_time_forward[client][i] = 0.0;
-		playerinfo_banned_flags[client][i] = false;
-	}
+    for (int i = 0; i < CHEAT_MAX; i++) {
+        playerinfo_time_forward[client][i] = 0.0;
+        playerinfo_banned_flags[client][i] = false;
+    }
 
-	for (int i = 0; i < CMD_LENGTH; i++) {
-		playerinfo_buttons[client][i] = 0;
-		playerinfo_actions[client][i] = 0;
-		playerinfo_time_usercmd[client][i] = 0.0;
+    for (int i = 0; i < CMD_LENGTH; i++) {
+        playerinfo_buttons[client][i] = 0;
+        playerinfo_actions[client][i] = 0;
+        playerinfo_time_usercmd[client][i] = 0.0;
 
-		set_player_log_angles(client, view_as<float>({0.0, 0.0, 0.0}), i);
-	}
+        set_player_log_angles(client, view_as<float>({0.0, 0.0, 0.0}), i);
+    }
 }
 
 void lilac_log_setup_client(int client)
@@ -530,6 +531,10 @@ float angle_delta_true(const float a1[3], const float a2[3])
     return ArcTangent2(GetVectorLength(cross), GetVectorDotProduct(f1, f2)) * LILAC_RAD2DEG;
 }
 
+/* Legacy loss-only check. Kept for modules whose analysis does not depend on
+ * inter-command timing: speedhack counts commands per second and infected
+ * damage checks damage values, neither distorted by latency or jitter.
+ * Aimbot and aimlock use lilac_network_vetoed() instead. */
 bool skip_due_to_loss(int client, float threshold = 0.5, NetFlow flow = NetFlow_Both)
 {
 	if (icvar[CVAR_LOSS_FIX])

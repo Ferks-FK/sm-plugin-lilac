@@ -61,7 +61,8 @@
 #define CVAR_DATABASE              37
 #define CVAR_SPEEDHACK             38
 #define CVAR_INFECTED_DMG          39
-#define CVAR_MAX                   40
+#define CVAR_NET_VETO              40
+#define CVAR_MAX                   41
 
 #define BHOP_INDEX_MIN     0
 #define BHOP_INDEX_JUMP    1
@@ -105,6 +106,16 @@
 
 #define SPEEDHACK_BAN_MIN    5
 #define SPEEDHACK_CMD_RATIO  1.9 /* Flag if cmds/sec > tickrate * this value. */
+
+/* Network safety veto. This is not a detector: it suppresses punishment when
+ * the connection makes timing-based analysis unreliable. Aggregation is by
+ * maximum, not mean — a single spike inside the window is enough to
+ * distrust the sample. */
+#define NET_SAMPLES      50      /* 50 samples @ 10Hz = 5 second window */
+#define NET_MAX_PING     150.0
+#define NET_MAX_JITTER   25.0
+#define NET_MAX_LOSS     0.02
+#define NET_MAX_CHOKE    0.02
 
 #define STRFLAG_NEWLINE          (1 << 0) /* Carriage return or Newline. */
 #define STRFLAG_WIDE_CHAR_SPAM   (1 << 1) /* Lots of wide character spam. */
@@ -180,6 +191,10 @@ float playerinfo_time_forward[MAXPLAYERS + 1][CHEAT_MAX];
 bool playerinfo_banned_flags[MAXPLAYERS + 1][CHEAT_MAX];
 char playerinfo_detected[MAXPLAYERS + 1][1024];
 
+float playerinfo_net_ping[MAXPLAYERS + 1][NET_SAMPLES];
+bool  playerinfo_net_valid[MAXPLAYERS + 1][NET_SAMPLES];
+int   playerinfo_net_index[MAXPLAYERS + 1];
+int   playerinfo_net_count[MAXPLAYERS + 1];
 
 /* Forward declarations so we don't need third-party include files. */
 

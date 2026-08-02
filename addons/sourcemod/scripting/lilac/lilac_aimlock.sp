@@ -25,7 +25,7 @@ static bool aimlock_skip_player(int client)
 		|| !IsPlayerAlive(client)
 		|| GetClientTeam(client) < 2 /* Not on a valid team. */
 		|| GetGameTime() - playerinfo_time_teleported[client] < 2.0 /* Player recently teleported. */
-		|| skip_due_to_loss(client)
+		|| lilac_network_vetoed(client)
 		|| playerinfo_banned_flags[client][CHEAT_AIMLOCK]) /* Already banned/logged. */
 		return true;
 
