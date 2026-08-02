@@ -119,6 +119,9 @@
 #define PLUGIN_VERSION   "1.8.2"
 #define PLUGIN_URL       "https://github.com/J-Tanzanite/Little-Anti-Cheat"
 
+/* Set to 0 to remove all shadow-metric code from the build. */
+#define LILAC_ANGLE_METRIC_DEBUG 1
+
 /* Convars. */
 Convar hcvar[CVAR_MAX]; /* ConVar = built in SourceMod  |  Convar = kidfearless's convar_class */
 int icvar[CVAR_MAX];
@@ -146,6 +149,7 @@ char line_buffer[2048];
 char dateformat[512] = "%Y/%m/%d %H:%M:%S";
 char log_file[PLATFORM_MAX_PATH];
 char smooth_telemetry_log_file[PLATFORM_MAX_PATH];
+char angle_metric_log_file[PLATFORM_MAX_PATH];
 float max_angles[3] = {89.01, 0.0, 50.01};
 Handle forwardhandle = INVALID_HANDLE;
 Handle forwardhandleban = INVALID_HANDLE;

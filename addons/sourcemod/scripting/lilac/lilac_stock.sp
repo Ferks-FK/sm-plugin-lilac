@@ -278,6 +278,39 @@ void lilac_log_smooth_telemetry(int client, int sm_n, float sm_cv, float sm_avg_
     CloseHandle(file);
 }
 
+void lilac_log_angle_metric(int client, float eu_delta, float tr_delta,
+    float eu_total, float tr_total, float eu_final, float tr_final,
+    float shot_pitch, int eu_flags, int tr_flags, int ticks)
+{
+    Handle file = OpenFile(angle_metric_log_file, "a");
+
+    if (file == null) {
+        PrintToServer("[Lilac] Cannot open angle metric log file.");
+        return;
+    }
+
+    char date[512], steamid[64], buf[768];
+    FormatTime(date, sizeof(date), dateformat, GetTime());
+    GetClientAuthId(client, AuthId_Steam2, steamid, sizeof(steamid), true);
+
+    FormatEx(buf, sizeof(buf),
+        "%s {Name: \"%N\" | SteamID: %s} AngleMetric | Ticks: %d | Pitch: %.1f | \
+Delta: %.2f/%.2f | TotalDelta: %.2f/%.2f | FinalDist: %.2f/%.2f | Flags: %d/%d | Ratio: %.3f%s",
+        date, client, steamid, ticks, shot_pitch,
+        eu_delta, tr_delta, eu_total, tr_total, eu_final, tr_final,
+        eu_flags, tr_flags,
+        (tr_total > 0.01) ? (eu_total / tr_total) : 0.0,
+        (eu_flags != tr_flags) ? " <<< DISAGREE" : "");
+
+    for (int i = 0; buf[i]; i++) {
+        if (buf[i] == '\n' || buf[i] == 0x0d) buf[i] = '*';
+        else if (buf[i] < 32) buf[i] = '#';
+    }
+
+    WriteFileLine(file, "%s", buf);
+    CloseHandle(file);
+}
+
 void lilac_log_first_time_setup()
 {
     /* Some admins may not understand how to interpret cheat logs
@@ -474,6 +507,27 @@ float angle_delta(float []a1, float []a2)
 	}
 
 	return delta;
+}
+
+#define LILAC_RAD2DEG 57.29577951308232
+
+/* True angular distance between two view angles (great-circle).
+ * Uses atan2(|cross|, dot) instead of acos(dot): acos loses precision
+ * catastrophically near dot=1.0, which is exactly the sub-degree range
+ * the smooth/jerk analysis operates in. */
+float angle_delta_true(const float a1[3], const float a2[3])
+{
+    float f1[3], f2[3], p1[3], p2[3], cross[3];
+
+    p1[0] = a1[0]; p1[1] = a1[1]; p1[2] = 0.0;
+    p2[0] = a2[0]; p2[1] = a2[1]; p2[2] = 0.0;
+
+    GetAngleVectors(p1, f1, NULL_VECTOR, NULL_VECTOR);
+    GetAngleVectors(p2, f2, NULL_VECTOR, NULL_VECTOR);
+
+    GetVectorCrossProduct(f1, f2, cross);
+
+    return ArcTangent2(GetVectorLength(cross), GetVectorDotProduct(f1, f2)) * LILAC_RAD2DEG;
 }
 
 bool skip_due_to_loss(int client, float threshold = 0.5, NetFlow flow = NetFlow_Both)

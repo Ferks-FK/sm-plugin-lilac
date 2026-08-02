@@ -20,7 +20,7 @@ static int jump_ticks[MAXPLAYERS + 1];
 static int perfect_bhops[MAXPLAYERS + 1];
 static int next_bhop[MAXPLAYERS + 1];
 static int detections[MAXPLAYERS + 1];
-
+static int air_ticks[MAXPLAYERS + 1];
 
 static void bhop_reset(int client)
 {
@@ -28,6 +28,7 @@ static void bhop_reset(int client)
 	jump_ticks[client] = -1;
 	perfect_bhops[client] = -1;
 	next_bhop[client] = GetGameTickCount();
+	air_ticks[client] = 0;
 }
 
 void lilac_bhop_reset_client(int client)
@@ -46,19 +47,32 @@ void lilac_bhop_check(int client, const int buttons, int last_buttons)
 		jump_ticks[client]++;
 
 	int flags = GetEntityFlags(client);
+
+	/* Airborne: accumulate air time and stop, nothing to evaluate here. */
+	if (!(flags & FL_ONGROUND)) {
+		air_ticks[client]++;
+		return;
+	}
+
 	if ((buttons & IN_JUMP) && !(last_buttons & IN_JUMP)) {
-		if ((flags & FL_ONGROUND)) {
-			if (GetGameTickCount() > next_bhop[client]) {
-				next_bhop[client] = GetGameTickCount() + bhop_settings[BHOP_INDEX_AIR];
-				perfect_bhops[client]++;
-				check_bhop_max(client);
+		if (GetGameTickCount() > next_bhop[client]) {
+			/* Real jumps spend time airborne. Guards against FL_ONGROUND
+			 * flickering on stairs, debris and geometry corners. */
+			if (air_ticks[client] < 4) {
+				air_ticks[client] = 0;
+				return;
 			}
-			else {
-				bhop_reset(client);
-			}
+
+			next_bhop[client] = GetGameTickCount() + bhop_settings[BHOP_INDEX_AIR];
+			perfect_bhops[client]++;
+			air_ticks[client] = 0;
+			check_bhop_max(client);
+		}
+		else {
+			bhop_reset(client);
 		}
 	}
-	else if ((flags & FL_ONGROUND)) {
+	else {
 		check_bhop_min(client);
 		bhop_reset(client);
 	}
@@ -105,7 +119,8 @@ static void check_bhop_min(int client)
 static void lilac_detected_bhop(int client, bool force_log, bool banning)
 {
 	char sDetails[512];
-	Format(sDetails, sizeof(sDetails), "Detection: %d | Bhops: %d | JumpTicks: %d", detections[client], perfect_bhops[client], jump_ticks[client]);
+	Format(sDetails, sizeof(sDetails), "Detection: %d | Bhops: %d | JumpTicks: %d",
+	detections[client], perfect_bhops[client], jump_ticks[client]);
 
 	lilac_save_player_details(client, sDetails);
 	lilac_forward_client_cheat(client, CHEAT_BHOP);

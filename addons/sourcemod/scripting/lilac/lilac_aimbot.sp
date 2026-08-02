@@ -137,6 +137,12 @@ public Action timer_check_aimbot(Handle timer, DataPack pack)
     float sm_last_tdelta = -1.0;
     float sm_total_delta = 0.0;
 
+    #if LILAC_ANGLE_METRIC_DEBUG
+        float tr_aimdist = 0.0, tr_laimdist = 0.0;
+        float tr_delta = 0.0, tr_tdelta = 0.0, tr_total_delta = 0.0;
+        int   tr_detected = 0;
+    #endif
+
     /* Declared at function scope so bypass telemetry can access them
      * without recomputing inside the smooth block. */
     float sm_cv = 99.0;
@@ -221,9 +227,26 @@ public Action timer_check_aimbot(Handle timer, DataPack pack)
             laimdist = angle_delta(playerinfo_angles[client][ind], ideal);
             get_player_log_angles(client, ind, false, ang);
 
+            #if LILAC_ANGLE_METRIC_DEBUG
+                tr_laimdist = angle_delta_true(playerinfo_angles[client][ind], ideal);
+            #endif
+
             /* Skip first iteration as we need angle deltas. */
             if (i) {
                 tdelta = angle_delta(lang, ang);
+
+                #if LILAC_ANGLE_METRIC_DEBUG
+                    tr_tdelta = angle_delta_true(lang, ang);
+                    if (tr_tdelta > tr_delta)
+                        tr_delta = tr_tdelta;
+                    tr_total_delta += tr_tdelta;
+
+                    /* Would the same rules have fired with the correct metric? */
+                    if (tr_aimdist < tr_laimdist * 0.2 && tr_tdelta > 10.0)
+                        tr_detected |= AIMBOT_FLAG_SNAP;
+                    if (tr_aimdist < tr_laimdist * 0.1 && tr_tdelta > 5.0)
+                        tr_detected |= AIMBOT_FLAG_SNAP2;
+                #endif
 
                 /* Store largest delta. */
                 if (tdelta > delta)
@@ -261,10 +284,33 @@ public Action timer_check_aimbot(Handle timer, DataPack pack)
 
             lang = ang;
             aimdist = laimdist;
+
+            #if LILAC_ANGLE_METRIC_DEBUG
+                tr_aimdist = tr_laimdist;
+            #endif
         }
 
         /* Calculated once here — used by both smooth block and bypass telemetry below. */
         float final_dist = angle_delta(playerinfo_angles[client][shotindex], ideal);
+
+        #if LILAC_ANGLE_METRIC_DEBUG
+            float tr_final_dist = angle_delta_true(playerinfo_angles[client][shotindex], ideal);
+
+            /* Log only what is worth calibrating: disagreements, real detections,
+            * and high-movement shots. Everything else would flood the file. */
+            if ((detected & (AIMBOT_FLAG_SNAP | AIMBOT_FLAG_SNAP2)) != tr_detected
+                || detected
+                || total_delta > 90.0)
+            {
+                lilac_log_angle_metric(client,
+                    delta, tr_delta,
+                    total_delta, tr_total_delta,
+                    final_dist, tr_final_dist,
+                    playerinfo_angles[client][shotindex][0],
+                    detected & (AIMBOT_FLAG_SNAP | AIMBOT_FLAG_SNAP2), tr_detected,
+                    total_analysis_ticks);
+            }
+        #endif
 
         /* Smooth aimbot mathematical validation. */
         if (sm_n >= 5 && sm_jerk_count >= 3 && sm_total_delta >= min_total_delta) {
