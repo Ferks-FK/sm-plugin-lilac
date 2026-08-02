@@ -50,6 +50,7 @@
 #include "lilac/lilac_macro.sp"
 #include "lilac/lilac_ping.sp"
 #include "lilac/lilac_speedhack.sp"
+#include "lilac/lilac_speedhack_smac.sp"
 #include "lilac/lilac_infected_damage.sp"
 #include "lilac/lilac_stock.sp"
 #include "lilac/lilac_string.sp" /* String takes care of chat and names. */
@@ -139,6 +140,7 @@ public void OnPluginStart()
     CreateTimer(5.0, timer_check_ping, _, TIMER_REPEAT);
     CreateTimer(5.0, timer_check_lerp, _, TIMER_REPEAT);
     CreateTimer(1.0, timer_check_speedhack, _, TIMER_REPEAT);
+    CreateTimer(1.0, timer_check_speedhack_smac, _, TIMER_REPEAT);
     CreateTimer(0.1, timer_check_aimlock, _, TIMER_REPEAT);
     CreateTimer(60.0 * 5.0, timer_decrement_macro, _, TIMER_REPEAT);
 
@@ -315,9 +317,111 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 
         /* Clamp infected player tickbase to prevent burst-attack exploit. */
         lilac_tickbase_fix(client);
+
+        /* Experimental SMAC-style speedhack comparison (log-only). */
+        if (icvar[CVAR_SPEEDHACK])
+            lilac_speedhack_smac_consume(client);
     }
 
     lbuttons[client] = buttons;
 
     return Plugin_Continue;
+}
+
+public void OnMapStart()
+{
+    g_fTimeSinceMapStart   = GetEngineTime();
+    g_fServerLagPauseUntil = 0.0;
+    g_bServerLagLogged     = false;
+    g_iServerTickrate      = 0;
+    g_iTicksThisSecond     = 0;
+    g_fTPSWindowStart      = 0.0;
+    g_iCurrentTPS          = 0;
+    g_iTriggerTPS          = 0;
+
+    g_iEffectiveTPS        = 0;
+    g_iTPSCalibSum         = 0;
+    g_iTPSCalibSamples     = 0;
+
+    g_bTPSWindowArmed      = false;
+}
+
+public void OnGameFrame()
+{
+    float engineNow = GetEngineTime();
+
+    if (g_iServerTickrate == 0)
+    {
+        g_iServerTickrate   = RoundToNearest(1.0 / GetTickInterval());
+    }
+
+    /* Grace period after map start — engine is still settling. */
+    if (engineNow - SERVER_LAG_MAP_START_WAIT < g_fTimeSinceMapStart)
+        return;
+
+    /* Arm the TPS window exactly when the grace period ends.
+     * Without this, g_fTPSWindowStart is still 0.0 and the first window
+     * closes immediately with a single tick counted, producing a spurious
+     * TPS=1 sample that contaminates calibration. */
+    if (!g_bTPSWindowArmed)
+    {
+        g_bTPSWindowArmed  = true;
+        g_fTPSWindowStart  = engineNow;
+        g_iTicksThisSecond = 0;
+        return;
+    }
+
+    g_iTicksThisSecond++;
+
+    if (engineNow - 1.0 >= g_fTPSWindowStart)
+    {
+        g_fTPSWindowStart  = engineNow;
+        g_iCurrentTPS      = g_iTicksThisSecond;
+        g_iTicksThisSecond = 0;
+
+        /* Calibration phase: measure the server's actual effective TPS. */
+        if (g_iEffectiveTPS == 0)
+        {
+            /* Reject samples that are implausibly low — a sample far below the
+             * nominal tickrate means the server was lagging DURING calibration,
+             * which would poison the effective TPS. Discard and keep sampling. */
+            if (g_iCurrentTPS < RoundToFloor(float(g_iServerTickrate) * SERVER_LAG_CALIB_MIN_RATIO))
+                return;
+
+            g_iTPSCalibSum += g_iCurrentTPS;
+            g_iTPSCalibSamples++;
+
+            if (g_iTPSCalibSamples >= SERVER_LAG_CALIB_SAMPLES)
+                g_iEffectiveTPS = g_iTPSCalibSum / g_iTPSCalibSamples;
+
+            return;
+        }
+
+        /* Detect LOW TPS — the stall/tick-drop itself, caught in real time.
+         * This is the primary and more reliable signal: a stall guarantees
+         * a reduced tick count in the window(s) it overlaps, whereas a
+         * compensating catch-up spike afterward is not guaranteed to happen
+         * (Source does not necessarily "replay" missed ticks in a burst). */
+        int tpsLow = RoundToFloor(float(g_iEffectiveTPS) * SERVER_LAG_TPS_LOW_MULT);
+
+        if (g_iCurrentTPS < tpsLow)
+        {
+            g_fServerLagPauseUntil = engineNow + SERVER_LAG_PAUSE_SECS;
+            g_iTriggerTPS          = g_iCurrentTPS;
+        }
+
+        /* Detect HIGH TPS — the catch-up spike after a stall, if one occurs.
+         * Kept as a secondary signal alongside the low-TPS check above. */
+        int tpsHigh = RoundToCeil(float(g_iEffectiveTPS) * SERVER_LAG_TPS_HIGH_MULT);
+
+        if (g_iCurrentTPS > tpsHigh)
+        {
+            /* Extend the pause on every qualifying spike, even if a pause is
+             * already active — sustained lag with repeated catch-up spikes
+             * keeps the detection paused instead of reopening the false-positive
+             * window between spikes. */
+            g_fServerLagPauseUntil = engineNow + SERVER_LAG_PAUSE_SECS;
+            g_iTriggerTPS          = g_iCurrentTPS;
+        }
+    }
 }

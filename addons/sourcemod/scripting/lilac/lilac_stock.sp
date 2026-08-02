@@ -85,37 +85,38 @@ bool bullettime_can_shoot(int client)
 
 void lilac_reset_client(int client)
 {
-	lilac_backtrack_reset_client(client);
-	lilac_bhop_reset_client(client);
-	lilac_macro_reset_client(client);
-	lilac_aimbot_reset_client(client);
-	lilac_speedhack_reset_client(client);
-	lilac_infected_damage_reset_client(client);
-	lilac_ping_reset_client(client);
-	lilac_convar_reset_client(client);
-	lilac_lerp_reset_client(client);
+    lilac_backtrack_reset_client(client);
+    lilac_bhop_reset_client(client);
+    lilac_macro_reset_client(client);
+    lilac_aimbot_reset_client(client);
+    lilac_speedhack_reset_client(client);
+    lilac_speedhack_smac_reset_client(client);
+    lilac_infected_damage_reset_client(client);
+    lilac_ping_reset_client(client);
+    lilac_convar_reset_client(client);
+    lilac_lerp_reset_client(client);
 
-	playerinfo_index[client] = 0;
-	playerinfo_aimlock_sus[client] = 0;
-	playerinfo_aimlock[client] = 0;
-	playerinfo_time_bumpercart[client] = 0.0;
-	playerinfo_time_teleported[client] = 0.0;
-	playerinfo_time_aimlock[client] = 0.0;
-	playerinfo_time_process_aimlock[client] = 0.0;
-	Format(playerinfo_detected[client], sizeof(playerinfo_detected[]), "");
+    playerinfo_index[client] = 0;
+    playerinfo_aimlock_sus[client] = 0;
+    playerinfo_aimlock[client] = 0;
+    playerinfo_time_bumpercart[client] = 0.0;
+    playerinfo_time_teleported[client] = 0.0;
+    playerinfo_time_aimlock[client] = 0.0;
+    playerinfo_time_process_aimlock[client] = 0.0;
+    Format(playerinfo_detected[client], sizeof(playerinfo_detected[]), "");
 
-	for (int i = 0; i < CHEAT_MAX; i++) {
-		playerinfo_time_forward[client][i] = 0.0;
-		playerinfo_banned_flags[client][i] = false;
-	}
+    for (int i = 0; i < CHEAT_MAX; i++) {
+        playerinfo_time_forward[client][i] = 0.0;
+        playerinfo_banned_flags[client][i] = false;
+    }
 
-	for (int i = 0; i < CMD_LENGTH; i++) {
-		playerinfo_buttons[client][i] = 0;
-		playerinfo_actions[client][i] = 0;
-		playerinfo_time_usercmd[client][i] = 0.0;
+    for (int i = 0; i < CMD_LENGTH; i++) {
+        playerinfo_buttons[client][i] = 0;
+        playerinfo_actions[client][i] = 0;
+        playerinfo_time_usercmd[client][i] = 0.0;
 
-		set_player_log_angles(client, view_as<float>({0.0, 0.0, 0.0}), i);
-	}
+        set_player_log_angles(client, view_as<float>({0.0, 0.0, 0.0}), i);
+    }
 }
 
 void lilac_log_setup_client(int client)
@@ -297,6 +298,7 @@ That is all, have a wonderful day~\n\n\n", PLUGIN_VERSION);
     }
 
     lilac_log_smooth_telemetry_setup();
+    lilac_speedhack_smac_log_setup();
 }
 
 void lilac_ban_client(int client, int cheat)
@@ -573,4 +575,106 @@ public int lilac_native_get_detected_infos(Handle hPlugin, int numParams)
 		return 1;
 
 	return -1;
+}
+
+/* Returns true if speedhack detection should currently be paused. */
+bool lilac_server_is_lagging()
+{
+    return (GetEngineTime() < g_fServerLagPauseUntil);
+}
+
+/* Logs the pause once per lag episode. Called from timer_check_speedhack
+ * when lilac_server_is_lagging() is true. */
+void lilac_server_lag_log_once()
+{
+    if (g_bServerLagLogged)
+        return;
+
+    g_bServerLagLogged = true;
+
+    if (!icvar[CVAR_LOG])
+        return;
+
+    char date[64];
+    FormatTime(date, sizeof(date), dateformat, GetTime());
+
+    FormatEx(line_buffer, sizeof(line_buffer),
+        "%s [Version %s] speedhack detection paused: server tps abnormal | tps: %d (effective ~%d @ %dtick) | paused %.1fs",
+        date, PLUGIN_VERSION,
+        g_iTriggerTPS,
+        g_iEffectiveTPS,
+        g_iServerTickrate,
+        g_fServerLagPauseUntil - GetEngineTime());
+
+    lilac_log(true);
+}
+
+/* Resets the log latch when the pause ends. */
+void lilac_server_lag_reset_log()
+{
+    g_bServerLagLogged = false;
+}
+
+/* ===== Tickbase Fix (shared helper) =====
+ * Clamps client tickbase when it deviates too far from the server tick.
+ * Used by: speedhack module (grace period), infected_damage module (exploit prevention).
+ *
+ * Call lilac_tickbase_fix(client) from OnPlayerRunCmd or equivalent per-tick hook,
+ * gated only by CVAR_ENABLE. */
+
+void lilac_tickbase_fix_reset_client(int client)
+{
+    g_flTickbaseLastLog[client] = 0.0;
+}
+
+void lilac_tickbase_fix(int client)
+{
+    if (!IsPlayerAlive(client))
+        return;
+
+    int serverTick = GetGameTickCount();
+    int diff       = serverTick - GetEntProp(client, Prop_Send, "m_nTickBase");
+    int clamp_threshold = tick_rate * TICKBASE_CLAMP_SECS;
+
+    /* Client tickbase is behind — backlog being built up. */
+    if (diff > clamp_threshold)
+    {
+        SetEntProp(client, Prop_Send, "m_nTickBase", serverTick);
+        lilac_tickbase_fix_log(client, diff);
+        lilac_speedhack_notify_tickbase_clamp(client);
+        lilac_speedhack_smac_notify_tickbase_clamp(client);
+    }
+}
+
+static void lilac_tickbase_fix_log(int client, int magnitude)
+{
+    if (!icvar[CVAR_LOG] || magnitude <= tick_rate * TICKBASE_LOG_SECS)
+        return;
+
+    /* A fresh spawn naturally leaves a stale m_nTickBase behind (e.g. an
+     * infected that just finished its respawn/ghost wait) — this is not
+     * manipulation, so don't log it as such. The clamp above still applies. */
+    if (GetGameTime() - playerinfo_time_teleported[client] < 3.0)
+        return;
+
+    /* A server-wide stall can push every client's tickbase out of sync too,
+     * same root cause as the speedhack lag pause. Not manipulation either. */
+    if (lilac_server_is_lagging())
+        return;
+
+    float now = GetGameTime();
+    if (now - g_flTickbaseLastLog[client] < 5.0)
+        return;
+
+    g_flTickbaseLastLog[client] = now;
+    lilac_log_setup_client(client);
+
+    Format(line_buffer, sizeof(line_buffer),
+        "%s tickbase manipulation: %d ticks (%.1fs) behind. Clamped.",
+        line_buffer, magnitude, float(magnitude) * GetTickInterval());
+
+    lilac_log(true);
+
+    if (icvar[CVAR_LOG_EXTRA])
+        lilac_log_extra(client);
 }
