@@ -124,14 +124,50 @@
 #define DATABASE_KICK -1
 #define DATABASE_LOG_ONLY -2
 
+#define TICKBASE_CLAMP_SECS   2
+#define TICKBASE_LOG_SECS    25
+
 #define PLUGIN_NAME      "[Lilac] Little Anti-Cheat"
 #define PLUGIN_AUTHOR    "J_Tanzanite, Ferks-FK"
 #define PLUGIN_DESC      "An opensource Anti-Cheat"
-#define PLUGIN_VERSION   "1.8.2"
+#define PLUGIN_VERSION   "1.8.3"
 #define PLUGIN_URL       "https://github.com/J-Tanzanite/Little-Anti-Cheat"
 
 /* Set to 0 to remove all shadow-metric code from the build. */
 #define LILAC_ANGLE_METRIC_DEBUG 1
+
+// ============================================================
+// Server lag detection
+// ============================================================
+#define SERVER_LAG_TPS_HIGH_MULT   1.5
+#define SERVER_LAG_TPS_LOW_MULT    0.5  // tickspersec below effective*this = stall/tick-drop
+#define SERVER_LAG_PAUSE_SECS      5.0
+#define SERVER_LAG_MAP_START_WAIT  15.0
+#define SERVER_LAG_CALIB_SAMPLES   15   // seconds of calibration
+#define SERVER_LAG_CALIB_MIN_RATIO 0.5  // samples below effective*this are rejected
+
+// TPS counting
+int   g_iTicksThisSecond = 0;
+float g_fTPSWindowStart   = 0.0;
+int   g_iCurrentTPS       = 0;
+int   g_iTriggerTPS       = 0;
+int   g_iServerTickrate   = 0;
+
+// Calibration — measures effective tickrate after map start
+int   g_iEffectiveTPS     = 0;
+int   g_iTPSCalibSum      = 0;
+int   g_iTPSCalibSamples  = 0;
+
+// Lag pause state
+float g_fTimeSinceMapStart   = 0.0;
+float g_fServerLagPauseUntil = 0.0;
+bool  g_bServerLagLogged     = false;
+
+// Tracks whether the TPS window has been armed after the grace period.
+bool  g_bTPSWindowArmed      = false;
+
+// Tracks whether the server is currently in a lag pause state.
+float g_flTickbaseLastLog[MAXPLAYERS + 1];
 
 /* Convars. */
 Convar hcvar[CVAR_MAX]; /* ConVar = built in SourceMod  |  Convar = kidfearless's convar_class */

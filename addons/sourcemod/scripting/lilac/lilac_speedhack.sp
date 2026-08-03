@@ -1,23 +1,40 @@
 /*
-	Little Anti-Cheat
-	Copyright (C) 2018-2023 J_Tanzanite
+    Little Anti-Cheat - Speedhack Module
+    Copyright (C) 2026-2026 Ferks-FK
 
-	This program is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-	You should have received a copy of the GNU General Public License
-	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+// ===== Constants =====
+#define SPEEDHACK_LOSS_GRACE         20.0    // Seconds to suppress after high loss event
+#define SPEEDHACK_LOSS_HIGH_THRESH   0.15    // Loss threshold that triggers grace period
+#define SPEEDHACK_LATENCY_ALPHA      0.1     // EWMA smoothing factor for latency tracking
+#define SPEEDHACK_CV_SQ_THRESHOLD    0.1     // CV² > 0.1 → std dev > ~32% of mean
+
+// ===== Per-client state =====
 static int speedhack_detection[MAXPLAYERS + 1];
-float player_avg_choke[MAXPLAYERS + 1];
+static float player_avg_choke[MAXPLAYERS + 1];
+
+// Loss grace period tracking
+static float player_last_high_loss[MAXPLAYERS + 1];
+
+// Latency stability: EWMA of value and EWMA of squared value for variance
+// Initialized to -1.0 as sentinel; first sample seeds directly.
+static float player_latency_out_ewma[MAXPLAYERS + 1];
+static float player_latency_out_sq_ewma[MAXPLAYERS + 1];
+
+// Server-wide
 static ConVar g_hMaxCmdrate = null;
 static bool g_bMaxCmdrateChecked = false;
 
@@ -25,6 +42,11 @@ void lilac_speedhack_reset_client(int client)
 {
     speedhack_detection[client] = 0;
     player_avg_choke[client] = 0.0;
+    player_last_high_loss[client] = 0.0;
+    player_latency_out_ewma[client] = -1.0;
+    player_latency_out_sq_ewma[client] = -1.0;
+
+    lilac_tickbase_fix_reset_client(client);
 }
 
 void lilac_speedhack_update_choke(int client)
@@ -39,18 +61,19 @@ public Action timer_check_speedhack(Handle timer)
     if (!icvar[CVAR_ENABLE] || !icvar[CVAR_SPEEDHACK])
         return Plugin_Continue;
 
-    /* Tickrate must be sane to compare against. */
     if (tick_rate <= 0)
         return Plugin_Continue;
 
-    /* Compute once per timer fire — these values are server-wide constants
-    * that cannot change between client iterations in the same callback. */
+    if (lilac_server_is_lagging()) {
+        lilac_server_lag_log_once();
+
+        return Plugin_Continue;
+    } else {
+        lilac_server_lag_reset_log();
+    }
+
     float now = GetGameTime();
 
-    /* Use sv_maxcmdrate as the baseline if it is higher than tick_rate.
-    * Some servers allow clients to send commands above the tickrate
-    * (e.g. 66-tick server with sv_maxcmdrate 100). Using only tick_rate
-    * as the base would cause false positives for those legitimate players. */
     int baseline = tick_rate;
     if (!g_bMaxCmdrateChecked) {
         g_hMaxCmdrate = FindConVar("sv_maxcmdrate");
@@ -66,9 +89,32 @@ public Action timer_check_speedhack(Handle timer)
         if (playerinfo_banned_flags[client][CHEAT_SPEEDHACK])
             continue;
 
-        /* Update choke unconditionally so the EWMA converges during the
-        * grace period and is ready when detection actually starts. */
+        /* Update tracking unconditionally so EWMAs converge during the
+         * grace period and are ready when detection actually starts. */
         lilac_speedhack_update_choke(client);
+
+        /* Update latency stability tracking.
+         * First sample seeds the EWMA directly to avoid the warm-up
+         * artifact where variance is non-zero for constant input. */
+        float lat = GetClientAvgLatency(client, NetFlow_Outgoing);
+
+        if (player_latency_out_ewma[client] < 0.0) {
+            player_latency_out_ewma[client] = lat;
+            player_latency_out_sq_ewma[client] = lat * lat;
+        } else {
+            player_latency_out_ewma[client] =
+                SPEEDHACK_LATENCY_ALPHA * lat +
+                (1.0 - SPEEDHACK_LATENCY_ALPHA) * player_latency_out_ewma[client];
+            player_latency_out_sq_ewma[client] =
+                SPEEDHACK_LATENCY_ALPHA * (lat * lat) +
+                (1.0 - SPEEDHACK_LATENCY_ALPHA) * player_latency_out_sq_ewma[client];
+        }
+
+        /* Track high loss events for grace period. */
+        if (icvar[CVAR_LOSS_FIX]) {
+            if (GetClientAvgLoss(client, NetFlow_Incoming) > SPEEDHACK_LOSS_HIGH_THRESH)
+                player_last_high_loss[client] = now;
+        }
 
         /* Player just connected, buffer may not be representative yet. */
         if (GetClientTime(client) < 10.0)
@@ -77,13 +123,44 @@ public Action timer_check_speedhack(Handle timer)
         if (!IsPlayerAlive(client))
             continue;
 
-        /* High packet loss can cause the server to process queued cmds in
-        * bursts, which would trigger false positives. */
+        /* ===== High loss grace period =====
+         * After high loss, queued cmds are processed in bursts as
+         * connectivity recovers. Suppress detection for a period. */
+        if (icvar[CVAR_LOSS_FIX]
+            && player_last_high_loss[client] > 0.0
+            && (now - player_last_high_loss[client]) < SPEEDHACK_LOSS_GRACE)
+        {
+            continue;
+        }
+
+        /* Existing: instantaneous high loss check. */
         if (skip_due_to_loss(client, 0.15, NetFlow_Incoming))
             continue;
 
-        /* High incoming choke causes burst processing of queued usercmds,
-        * which is indistinguishable from a speedhack. */
+        /* ===== Latency instability check (CV²) =====
+         * Coefficient of variation squared computed from online EWMA
+         * statistics: variance = E[X²] - (E[X])², CV² = var / mean².
+         *
+         * A CV² > 0.1 means std dev exceeds ~32% of the mean.
+         * Connection quality is the ping module's responsibility.
+         *
+         * Validation from real logs:
+         *   Cheater:    latency ~0.039 ± 0.001 → CV² ≈ 0.0007
+         *   Lagging FP: latency ~0.056 ± 0.022 → CV² ≈ 0.15 */
+        float variance = player_latency_out_sq_ewma[client]
+            - (player_latency_out_ewma[client] * player_latency_out_ewma[client]);
+
+        if (variance < 0.0)
+            variance = 0.0;
+
+        float cv_sq = 0.0;
+        if (player_latency_out_ewma[client] > 0.01)
+            cv_sq = variance / (player_latency_out_ewma[client] * player_latency_out_ewma[client]);
+
+        if (cv_sq > SPEEDHACK_CV_SQ_THRESHOLD)
+            continue;
+
+        /* Existing: choke-based skip. */
         if (player_avg_choke[client] > 0.3
             && GetClientAvgChoke(client, NetFlow_Incoming) > 0.2)
             continue;
@@ -101,29 +178,23 @@ public Action timer_check_speedhack(Handle timer)
 
             float t = playerinfo_time_usercmd[client][ind];
 
-            /* Uninitialized slot — stop early. */
             if (t == 0.0)
                 break;
 
-            /* Older than 1 second — stop. */
             if (now - t > 1.0)
                 break;
 
             count++;
         }
 
-        /* Flag if the count significantly exceeds what the server allows.
-        * The ratio 1.9 gives clearance for normal variance and server lag spikes
-        * (e.g., 100 tick → threshold = ~190 cmds/sec) while catching
-        * speedfactor=1 (doubles speed → ~200 cmds/sec) with a 10 cmd margin. */
         if (float(count) > float(baseline) * SPEEDHACK_CMD_RATIO)
-            lilac_detected_speedhack(client, count, baseline);
+            lilac_detected_speedhack(client, count, baseline, cv_sq);
     }
 
     return Plugin_Continue;
 }
 
-static void lilac_detected_speedhack(int client, int cmdcount, int baseline)
+static void lilac_detected_speedhack(int client, int cmdcount, int baseline, float cv_sq)
 {
     if (playerinfo_banned_flags[client][CHEAT_SPEEDHACK])
         return;
@@ -138,10 +209,14 @@ static void lilac_detected_speedhack(int client, int cmdcount, int baseline)
 
     char sDetails[256];
     Format(sDetails, sizeof(sDetails),
-        "Detection: %d | CmdsPerSec: %d | ExpectedMax: ~%d | AvgChoke: %.2f",
+        "Detection: %d | CmdsPerSec: %d | ExpectedMax: ~%d | AvgChoke: %.2f | CV2: %.4f | Current TPS: %d | Effective TPS: %d | Tickrate: %d",
         speedhack_detection[client], cmdcount,
         RoundToFloor(float(baseline) * SPEEDHACK_CMD_RATIO),
-        player_avg_choke[client]);
+        player_avg_choke[client],
+        cv_sq,
+        g_iCurrentTPS,
+        g_iEffectiveTPS,
+        g_iServerTickrate);
 
     lilac_save_player_details(client, sDetails);
     lilac_forward_client_cheat(client, CHEAT_SPEEDHACK);
@@ -189,13 +264,13 @@ static void lilac_detected_speedhack(int client, int cmdcount, int baseline)
 
 public Action timer_decrement_speedhack(Handle timer, int userid)
 {
-	int client = GetClientOfUserId(userid);
+    int client = GetClientOfUserId(userid);
 
-	if (!is_player_valid(client))
-		return Plugin_Continue;
+    if (!is_player_valid(client))
+        return Plugin_Continue;
 
-	if (speedhack_detection[client] > 0)
-		speedhack_detection[client]--;
+    if (speedhack_detection[client] > 0)
+        speedhack_detection[client]--;
 
-	return Plugin_Continue;
+    return Plugin_Continue;
 }

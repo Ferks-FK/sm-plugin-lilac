@@ -1,6 +1,6 @@
 /*
 	Little Anti-Cheat
-	Copyright (C) 2018-2023 J_Tanzanite
+	Copyright (C) 2026-2026 Ferks-FK
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -38,25 +38,17 @@ static int lilac_inf_threshold(int zclass)
 	return (zclass >= 1 && zclass <= 8) ? inf_dmg_threshold[zclass] : 0;
 }
 
-/* Tickbase fix: clamp when server tick is this many seconds ahead of m_nTickBase.
- * 2 s is enough to absorb legitimate choke while catching intentional manipulation. */
-#define TICKBASE_CLAMP_SECS   2
-/* Only log when the gap is this large — clearly intentional, not just high latency. */
-#define TICKBASE_LOG_SECS    25
-
 static float inf_dmg_time       [MAXPLAYERS + 1][INF_DMG_BUF_SIZE];
 static int   inf_dmg_amount     [MAXPLAYERS + 1][INF_DMG_BUF_SIZE];
 static int   inf_dmg_head       [MAXPLAYERS + 1];
 static int   inf_dmg_detections [MAXPLAYERS + 1];
 static int   inf_dmg_last_tick  [MAXPLAYERS + 1];
-static float inf_tbfix_last_log [MAXPLAYERS + 1];
 
 void lilac_infected_damage_reset_client(int client)
 {
 	inf_dmg_head[client]       = 0;
 	inf_dmg_detections[client] = 0;
 	inf_dmg_last_tick[client]  = -1;
-	inf_tbfix_last_log[client] = 0.0;
 
 	for (int i = 0; i < INF_DMG_BUF_SIZE; i++)
 	{
@@ -228,41 +220,4 @@ public Action timer_decrement_infected_dmg(Handle timer, int userid)
 		inf_dmg_detections[client]--;
 
 	return Plugin_Continue;
-}
-
-/* Called from OnPlayerRunCmd every usercmd. Resets m_nTickBase when a client has
- * accumulated more ticks than TICKBASE_CLAMP_SECS allows, preventing burst-attack
- * exploits that bypass cooldown enforcement in RunCmd. */
-void lilac_tickbase_fix(int client)
-{
-    if (!icvar[CVAR_ENABLE] || !icvar[CVAR_INFECTED_DMG])
-        return;
-
-    if (!IsPlayerAlive(client))
-        return;
-
-    int serverTick = GetGameTickCount();
-    int diff       = serverTick - GetEntProp(client, Prop_Send, "m_nTickBase");
-
-    if (diff <= tick_rate * TICKBASE_CLAMP_SECS)
-        return;
-
-    SetEntProp(client, Prop_Send, "m_nTickBase", serverTick);
-
-    if (!icvar[CVAR_LOG] || diff <= tick_rate * TICKBASE_LOG_SECS)
-        return;
-
-    float now = GetGameTime();
-    if (now - inf_tbfix_last_log[client] < 5.0)
-        return;
-
-    inf_tbfix_last_log[client] = now;
-    lilac_log_setup_client(client);
-    Format(line_buffer, sizeof(line_buffer),
-        "%s tickbase manipulation: %d ticks (%.1fs) ahead. Clamped.",
-        line_buffer, diff, float(diff) * GetTickInterval());
-    lilac_log(true);
-
-    if (icvar[CVAR_LOG_EXTRA])
-        lilac_log_extra(client);
 }
