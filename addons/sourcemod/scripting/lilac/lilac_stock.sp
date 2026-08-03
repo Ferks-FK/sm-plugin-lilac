@@ -656,10 +656,10 @@ void lilac_server_lag_log_once()
     FormatTime(date, sizeof(date), dateformat, GetTime());
 
     FormatEx(line_buffer, sizeof(line_buffer),
-        "%s [Version %s] speedhack detection paused: server tps abnormal | tps: %d (effective ~%d @ %dtick) | paused %.1fs",
+        "%s [Version %s] speedhack detection paused: server tps abnormal | tps: %d (baseline ~%d @ %dtick) | paused %.1fs",
         date, PLUGIN_VERSION,
         g_iTriggerTPS,
-        g_iEffectiveTPS,
+        RoundToNearest(g_fTPSBaselineEWMA),
         g_iServerTickrate,
         g_fServerLagPauseUntil - GetEngineTime());
 
@@ -677,7 +677,8 @@ void lilac_server_lag_reset_log()
  * Used by: speedhack module (grace period), infected_damage module (exploit prevention).
  *
  * Call lilac_tickbase_fix(client) from OnPlayerRunCmd or equivalent per-tick hook,
- * gated only by CVAR_ENABLE. */
+ * gated by CVAR_ENABLE plus at least one of the two consumers (CVAR_SPEEDHACK,
+ * CVAR_INFECTED_DMG) — no point paying the clamp cost if neither cares. */
 
 void lilac_tickbase_fix_reset_client(int client)
 {
@@ -686,6 +687,9 @@ void lilac_tickbase_fix_reset_client(int client)
 
 void lilac_tickbase_fix(int client)
 {
+    if (!icvar[CVAR_SPEEDHACK] && !icvar[CVAR_INFECTED_DMG])
+        return;
+
     if (!IsPlayerAlive(client))
         return;
 

@@ -336,7 +336,7 @@ public void OnMapStart()
     g_iCurrentTPS          = 0;
     g_iTriggerTPS          = 0;
 
-    g_iEffectiveTPS        = 0;
+    g_fTPSBaselineEWMA     = 0.0;
     g_iTPSCalibSum         = 0;
     g_iTPSCalibSamples     = 0;
 
@@ -376,12 +376,12 @@ public void OnGameFrame()
         g_iCurrentTPS      = g_iTicksThisSecond;
         g_iTicksThisSecond = 0;
 
-        /* Calibration phase: measure the server's actual effective TPS. */
-        if (g_iEffectiveTPS == 0)
+        /* Seeding phase: gather an initial rolling baseline before tracking begins. */
+        if (g_fTPSBaselineEWMA <= 0.0)
         {
             /* Reject samples that are implausibly low — a sample far below the
-             * nominal tickrate means the server was lagging DURING calibration,
-             * which would poison the effective TPS. Discard and keep sampling. */
+             * nominal tickrate means the server was lagging DURING seeding,
+             * which would poison the initial baseline. Discard and keep sampling. */
             if (g_iCurrentTPS < RoundToFloor(float(g_iServerTickrate) * SERVER_LAG_CALIB_MIN_RATIO))
                 return;
 
@@ -389,36 +389,47 @@ public void OnGameFrame()
             g_iTPSCalibSamples++;
 
             if (g_iTPSCalibSamples >= SERVER_LAG_CALIB_SAMPLES)
-                g_iEffectiveTPS = g_iTPSCalibSum / g_iTPSCalibSamples;
+                g_fTPSBaselineEWMA = float(g_iTPSCalibSum) / float(g_iTPSCalibSamples);
 
             return;
         }
 
-        /* Detect LOW TPS — the stall/tick-drop itself, caught in real time.
-         * This is the primary and more reliable signal: a stall guarantees
-         * a reduced tick count in the window(s) it overlaps, whereas a
+        /* Compare against the rolling baseline rather than a fixed, one-time
+         * number — it tracks the server's actual recent load, so a sudden
+         * departure from "recent normal" is flagged regardless of the
+         * server's absolute tickrate or how busy it typically runs.
+         *
+         * LOW is the primary and more reliable signal: a stall guarantees a
+         * reduced tick count in the window(s) it overlaps, whereas a
          * compensating catch-up spike afterward is not guaranteed to happen
-         * (Source does not necessarily "replay" missed ticks in a burst). */
-        int tpsLow = RoundToFloor(float(g_iEffectiveTPS) * SERVER_LAG_TPS_LOW_MULT);
+         * (Source does not necessarily "replay" missed ticks in a burst).
+         * HIGH is the secondary signal, catching that catch-up spike when it
+         * does happen — the exact moment backlogged usercmds get flushed. */
+        int tpsLow  = RoundToFloor(g_fTPSBaselineEWMA * SERVER_LAG_TPS_LOW_MULT);
+        int tpsHigh = RoundToCeil(g_fTPSBaselineEWMA * SERVER_LAG_TPS_HIGH_MULT);
 
-        if (g_iCurrentTPS < tpsLow)
+        if (g_iCurrentTPS < tpsLow || g_iCurrentTPS > tpsHigh)
         {
+            /* Extend the pause on every qualifying window, even if a pause is
+             * already active — sustained lag keeps detection paused instead
+             * of reopening the false-positive window in between.
+             *
+             * Deliberately NOT folded into the baseline below: doing so would
+             * let an ongoing lag episode drag "normal" down (or up) to match
+             * itself, which would blind the very check meant to catch it. If
+             * the server stays this way, the pause simply keeps renewing —
+             * accepted trade-off, no auto-recovery timeout. */
             g_fServerLagPauseUntil = engineNow + SERVER_LAG_PAUSE_SECS;
             g_iTriggerTPS          = g_iCurrentTPS;
         }
-
-        /* Detect HIGH TPS — the catch-up spike after a stall, if one occurs.
-         * Kept as a secondary signal alongside the low-TPS check above. */
-        int tpsHigh = RoundToCeil(float(g_iEffectiveTPS) * SERVER_LAG_TPS_HIGH_MULT);
-
-        if (g_iCurrentTPS > tpsHigh)
+        else
         {
-            /* Extend the pause on every qualifying spike, even if a pause is
-             * already active — sustained lag with repeated catch-up spikes
-             * keeps the detection paused instead of reopening the false-positive
-             * window between spikes. */
-            g_fServerLagPauseUntil = engineNow + SERVER_LAG_PAUSE_SECS;
-            g_iTriggerTPS          = g_iCurrentTPS;
+            /* Healthy window — let the baseline drift toward it. This is what
+             * makes the margin dynamic: a sustained new normal (more players,
+             * a heavier map) gets absorbed over time instead of staying
+             * permanently flagged against a stale calibration. */
+            g_fTPSBaselineEWMA = (SERVER_LAG_BASELINE_ALPHA * float(g_iCurrentTPS))
+                + ((1.0 - SERVER_LAG_BASELINE_ALPHA) * g_fTPSBaselineEWMA);
         }
     }
 }

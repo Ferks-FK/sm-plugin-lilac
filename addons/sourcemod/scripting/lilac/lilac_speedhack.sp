@@ -209,13 +209,13 @@ static void lilac_detected_speedhack(int client, int cmdcount, int baseline, flo
 
     char sDetails[256];
     Format(sDetails, sizeof(sDetails),
-        "Detection: %d | CmdsPerSec: %d | ExpectedMax: ~%d | AvgChoke: %.2f | CV2: %.4f | Current TPS: %d | Effective TPS: %d | Tickrate: %d",
+        "Detection: %d | CmdsPerSec: %d | ExpectedMax: ~%d | AvgChoke: %.2f | CV2: %.4f | Current TPS: %d | Baseline TPS: %d | Tickrate: %d",
         speedhack_detection[client], cmdcount,
         RoundToFloor(float(baseline) * SPEEDHACK_CMD_RATIO),
         player_avg_choke[client],
         cv_sq,
         g_iCurrentTPS,
-        g_iEffectiveTPS,
+        RoundToNearest(g_fTPSBaselineEWMA),
         g_iServerTickrate);
 
     lilac_save_player_details(client, sDetails);

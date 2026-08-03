@@ -139,12 +139,13 @@
 // ============================================================
 // Server lag detection
 // ============================================================
-#define SERVER_LAG_TPS_HIGH_MULT   1.5
-#define SERVER_LAG_TPS_LOW_MULT    0.5  // tickspersec below effective*this = stall/tick-drop
-#define SERVER_LAG_PAUSE_SECS      5.0
-#define SERVER_LAG_MAP_START_WAIT  15.0
-#define SERVER_LAG_CALIB_SAMPLES   15   // seconds of calibration
-#define SERVER_LAG_CALIB_MIN_RATIO 0.5  // samples below effective*this are rejected
+#define SERVER_LAG_TPS_HIGH_MULT    1.5
+#define SERVER_LAG_TPS_LOW_MULT     0.75 // tickspersec below rolling baseline*this = stall/tick-drop
+#define SERVER_LAG_PAUSE_SECS       5.0
+#define SERVER_LAG_MAP_START_WAIT   15.0
+#define SERVER_LAG_CALIB_SAMPLES    15   // seconds of seeding before the rolling baseline goes live
+#define SERVER_LAG_CALIB_MIN_RATIO  0.5  // seed samples below nominal*this are rejected
+#define SERVER_LAG_BASELINE_ALPHA   0.05 // EWMA weight per healthy window (~20s to fully track a new sustained level)
 
 // TPS counting
 int   g_iTicksThisSecond = 0;
@@ -153,8 +154,11 @@ int   g_iCurrentTPS       = 0;
 int   g_iTriggerTPS       = 0;
 int   g_iServerTickrate   = 0;
 
-// Calibration — measures effective tickrate after map start
-int   g_iEffectiveTPS     = 0;
+// Rolling baseline — the ongoing "recent normal" TPS. Seeded once via a short
+// calibration after map start, then EWMA-updated every window that wasn't
+// itself flagged as anomalous, so it drifts to match sustained load changes
+// (more players, heavier map) without needing a hand-tuned fixed number.
+float g_fTPSBaselineEWMA  = 0.0;
 int   g_iTPSCalibSum      = 0;
 int   g_iTPSCalibSamples  = 0;
 
