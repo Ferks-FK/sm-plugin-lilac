@@ -50,7 +50,6 @@
 #include "lilac/lilac_macro.sp"
 #include "lilac/lilac_ping.sp"
 #include "lilac/lilac_speedhack.sp"
-#include "lilac/lilac_speedhack_smac.sp"
 #include "lilac/lilac_infected_damage.sp"
 #include "lilac/lilac_stock.sp"
 #include "lilac/lilac_string.sp" /* String takes care of chat and names. */
@@ -317,10 +316,6 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 
         /* Clamp infected player tickbase to prevent burst-attack exploit. */
         lilac_tickbase_fix(client);
-
-        /* Experimental SMAC-style speedhack comparison (log-only). */
-        if (icvar[CVAR_SPEEDHACK])
-            lilac_speedhack_smac_consume(client);
     }
 
     lbuttons[client] = buttons;

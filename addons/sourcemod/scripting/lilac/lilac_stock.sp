@@ -90,7 +90,6 @@ void lilac_reset_client(int client)
     lilac_macro_reset_client(client);
     lilac_aimbot_reset_client(client);
     lilac_speedhack_reset_client(client);
-    lilac_speedhack_smac_reset_client(client);
     lilac_infected_damage_reset_client(client);
     lilac_ping_reset_client(client);
     lilac_convar_reset_client(client);
@@ -298,7 +297,6 @@ That is all, have a wonderful day~\n\n\n", PLUGIN_VERSION);
     }
 
     lilac_log_smooth_telemetry_setup();
-    lilac_speedhack_smac_log_setup();
 }
 
 void lilac_ban_client(int client, int cheat)
@@ -641,8 +639,6 @@ void lilac_tickbase_fix(int client)
     {
         SetEntProp(client, Prop_Send, "m_nTickBase", serverTick);
         lilac_tickbase_fix_log(client, diff);
-        lilac_speedhack_notify_tickbase_clamp(client);
-        lilac_speedhack_smac_notify_tickbase_clamp(client);
     }
 }
 
