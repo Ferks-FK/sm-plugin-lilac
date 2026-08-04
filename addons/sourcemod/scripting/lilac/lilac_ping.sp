@@ -73,18 +73,19 @@ public Action timer_check_ping(Handle timer)
 		if (ping_high[i] < 20)
 			continue;
 
-		if (icvar[CVAR_LOG_MISC]) {
-			lilac_log_setup_client(i);
-			Format(line_buffer, sizeof(line_buffer),
-				"%s was kicked for having too high ping (%.3fms / %dms max).",
-				line_buffer, ping, icvar[CVAR_MAX_PING]);
+        // Really need log this? 
+		// if (icvar[CVAR_LOG_MISC]) {
+		// 	lilac_log_setup_client(i);
+		// 	Format(line_buffer, sizeof(line_buffer),
+		// 		"%s was kicked for having too high ping (%.3fms / %dms max).",
+		// 		line_buffer, ping, icvar[CVAR_MAX_PING]);
 
-			lilac_log(true);
+		// 	lilac_log(true);
 
-			if (icvar[CVAR_LOG_EXTRA] == 2)
-				lilac_log_extra(i);
-		}
-		database_log(i, "high_ping", DATABASE_KICK);
+		// 	if (icvar[CVAR_LOG_EXTRA] == 2)
+		// 		lilac_log_extra(i);
+		// }
+		// database_log(i, "high_ping", DATABASE_KICK);
 
 		Format(reason, sizeof(reason), "[Lilac] %T", "tban_ping_high", i,
 			ping, icvar[CVAR_MAX_PING]);
