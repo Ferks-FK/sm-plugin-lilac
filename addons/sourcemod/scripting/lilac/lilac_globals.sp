@@ -62,7 +62,8 @@
 #define CVAR_SPEEDHACK             38
 #define CVAR_INFECTED_DMG          39
 #define CVAR_NET_VETO              40
-#define CVAR_MAX                   41
+#define CVAR_SURVIVOR_DMG          41
+#define CVAR_MAX                   42
 
 #define BHOP_INDEX_MIN     0
 #define BHOP_INDEX_JUMP    1
@@ -93,7 +94,17 @@
 
 #define AIMLOCK_BAN_MIN   5
 
+/* Third-person/emote/dance plugins (and some scripted sequences) force the
+ * camera external via m_TimeForceExternalView — a standard engine prop, not
+ * anything specific to one plugin. While it's active the player isn't
+ * actually controlling their view, so the sent viewangles sit frozen —
+ * indistinguishable from a real aimlock. Grace period covers the short
+ * window right after it ends too, since aimlock's own analysis looks at
+ * ~0.6s of angle history that can still span the forced period. */
+#define CAMERA_FORCED_GRACE_SECS  1.0
+
 #define INFECTED_DMG_BAN_MIN 3
+#define SURVIVOR_DMG_BAN_MIN 3
 
 #define AIMBOT_BAN_MIN           5
 #define AIMBOT_MAX_TOTAL_DELTA   (180.0 * 2.5)
@@ -115,7 +126,13 @@
 #define NET_MAX_PING     150.0
 #define NET_MAX_JITTER   25.0
 #define NET_MAX_LOSS     0.02
-#define NET_MAX_CHOKE    0.02
+/* Choke is a rate/bandwidth-budget artifact (client throttling its own send
+ * rate versus cl_cmdrate/cl_updaterate), not a direct measure of link
+ * instability the way loss/jitter/ping are — a client that never tuned these
+ * for a high-tickrate server can sit here permanently without anything
+ * actually being wrong with its connection. Kept looser than the others so
+ * it doesn't veto a confident detection on its own. */
+#define NET_MAX_CHOKE    0.10
 
 #define STRFLAG_NEWLINE          (1 << 0) /* Carriage return or Newline. */
 #define STRFLAG_WIDE_CHAR_SPAM   (1 << 1) /* Lots of wide character spam. */
@@ -201,6 +218,7 @@ char dateformat[512] = "%Y/%m/%d %H:%M:%S";
 char log_file[PLATFORM_MAX_PATH];
 char smooth_telemetry_log_file[PLATFORM_MAX_PATH];
 char angle_metric_log_file[PLATFORM_MAX_PATH];
+char survivor_dmg_calib_log_file[PLATFORM_MAX_PATH];
 float max_angles[3] = {89.01, 0.0, 50.01};
 Handle forwardhandle = INVALID_HANDLE;
 Handle forwardhandleban = INVALID_HANDLE;
@@ -223,6 +241,7 @@ int playerinfo_aimlock_sus[MAXPLAYERS + 1];
 int playerinfo_aimlock[MAXPLAYERS + 1];
 float playerinfo_time_bumpercart[MAXPLAYERS + 1];
 float playerinfo_time_teleported[MAXPLAYERS + 1];
+float playerinfo_time_camera_forced[MAXPLAYERS + 1];
 float playerinfo_time_aimlock[MAXPLAYERS + 1];
 float playerinfo_time_process_aimlock[MAXPLAYERS + 1];
 float playerinfo_angles[MAXPLAYERS + 1][CMD_LENGTH][3];

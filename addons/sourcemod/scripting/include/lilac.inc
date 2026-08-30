@@ -38,7 +38,8 @@
 #define CHEAT_NEWLINE_NAME      10
 #define CHEAT_SPEEDHACK         11
 #define CHEAT_INFECTED_DMG      12
-#define CHEAT_MAX               13
+#define CHEAT_SURVIVOR_DMG      13
+#define CHEAT_MAX               14
 
 /**
  * Called when a player is detected cheating.
@@ -94,6 +95,7 @@ stock void GetCheatName(int type, char[] buffer, int maxlen)
 		case CHEAT_NEWLINE_NAME:Format(buffer, maxlen, "NewLine Name");
 		case CHEAT_SPEEDHACK:Format(buffer, maxlen, "Speedhack");
 		case CHEAT_INFECTED_DMG:Format(buffer, maxlen, "Infected Damage Exploit");
+		case CHEAT_SURVIVOR_DMG:Format(buffer, maxlen, "Survivor Damage Exploit");
 	}
 }
 

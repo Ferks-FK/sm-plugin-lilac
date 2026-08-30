@@ -19,10 +19,13 @@
 /*
 	Network safety veto.
 
-	Only used by modules whose analysis depends on the order and timing of
-	consecutive usercmds: aimbot and aimlock. Speedhack counts commands per
-	second and infected damage checks damage values — neither is distorted
-	by latency or jitter, so both keep using skip_due_to_loss().
+	Used by aimbot and aimlock, whose analysis depends on the order and
+	timing of consecutive usercmds, and by speedhack — a burst caused by a
+	client-side stall (loss/choke/jitter) looks identical to a real command
+	flood, even though speedhack's own metric (cmds/sec) isn't timing-based
+	the way aimbot's is. Infected damage checks raw damage values instead,
+	which isn't distorted by latency or jitter, so it keeps using the
+	simpler skip_due_to_loss().
 */
 
 void lilac_network_reset_client(int client)
@@ -34,6 +37,7 @@ void lilac_network_reset_client(int client)
 		playerinfo_net_ping[client][i] = 0.0;
 		playerinfo_net_valid[client][i] = false;
 	}
+
 }
 
 public Action timer_sample_network(Handle timer)

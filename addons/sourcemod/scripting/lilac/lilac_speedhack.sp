@@ -17,22 +17,15 @@
 */
 
 // ===== Constants =====
-#define SPEEDHACK_LOSS_GRACE         20.0    // Seconds to suppress after high loss event
-#define SPEEDHACK_LOSS_HIGH_THRESH   0.15    // Loss threshold that triggers grace period
-#define SPEEDHACK_LATENCY_ALPHA      0.1     // EWMA smoothing factor for latency tracking
-#define SPEEDHACK_CV_SQ_THRESHOLD    0.1     // CV² > 0.1 → std dev > ~32% of mean
+#define SPEEDHACK_NET_VETO_GRACE     20.0    // Seconds to keep suppressing after the network veto clears
 
 // ===== Per-client state =====
 static int speedhack_detection[MAXPLAYERS + 1];
 static float player_avg_choke[MAXPLAYERS + 1];
 
-// Loss grace period tracking
-static float player_last_high_loss[MAXPLAYERS + 1];
-
-// Latency stability: EWMA of value and EWMA of squared value for variance
-// Initialized to -1.0 as sentinel; first sample seeds directly.
-static float player_latency_out_ewma[MAXPLAYERS + 1];
-static float player_latency_out_sq_ewma[MAXPLAYERS + 1];
+// Network veto grace period tracking — GetGameTime() of the last tick the
+// shared network veto (lilac_network_vetoed) flagged this client, 0.0 = never.
+static float player_last_vetoed[MAXPLAYERS + 1];
 
 // Server-wide
 static ConVar g_hMaxCmdrate = null;
@@ -42,9 +35,7 @@ void lilac_speedhack_reset_client(int client)
 {
     speedhack_detection[client] = 0;
     player_avg_choke[client] = 0.0;
-    player_last_high_loss[client] = 0.0;
-    player_latency_out_ewma[client] = -1.0;
-    player_latency_out_sq_ewma[client] = -1.0;
+    player_last_vetoed[client] = 0.0;
 
     lilac_tickbase_fix_reset_client(client);
 }
@@ -89,32 +80,13 @@ public Action timer_check_speedhack(Handle timer)
         if (playerinfo_banned_flags[client][CHEAT_SPEEDHACK])
             continue;
 
-        /* Update tracking unconditionally so EWMAs converge during the
-         * grace period and are ready when detection actually starts. */
+        /* Update unconditionally so it's primed by the time the grace
+         * period below needs to read it, same reasoning as before. */
         lilac_speedhack_update_choke(client);
 
-        /* Update latency stability tracking.
-         * First sample seeds the EWMA directly to avoid the warm-up
-         * artifact where variance is non-zero for constant input. */
-        float lat = GetClientAvgLatency(client, NetFlow_Outgoing);
-
-        if (player_latency_out_ewma[client] < 0.0) {
-            player_latency_out_ewma[client] = lat;
-            player_latency_out_sq_ewma[client] = lat * lat;
-        } else {
-            player_latency_out_ewma[client] =
-                SPEEDHACK_LATENCY_ALPHA * lat +
-                (1.0 - SPEEDHACK_LATENCY_ALPHA) * player_latency_out_ewma[client];
-            player_latency_out_sq_ewma[client] =
-                SPEEDHACK_LATENCY_ALPHA * (lat * lat) +
-                (1.0 - SPEEDHACK_LATENCY_ALPHA) * player_latency_out_sq_ewma[client];
-        }
-
-        /* Track high loss events for grace period. */
-        if (icvar[CVAR_LOSS_FIX]) {
-            if (GetClientAvgLoss(client, NetFlow_Incoming) > SPEEDHACK_LOSS_HIGH_THRESH)
-                player_last_high_loss[client] = now;
-        }
+        bool vetoed = lilac_network_vetoed(client);
+        if (vetoed)
+            player_last_vetoed[client] = now;
 
         /* Player just connected, buffer may not be representative yet. */
         if (GetClientTime(client) < 10.0)
@@ -123,78 +95,34 @@ public Action timer_check_speedhack(Handle timer)
         if (!IsPlayerAlive(client))
             continue;
 
-        /* ===== High loss grace period =====
-         * After high loss, queued cmds are processed in bursts as
-         * connectivity recovers. Suppress detection for a period. */
-        if (icvar[CVAR_LOSS_FIX]
-            && player_last_high_loss[client] > 0.0
-            && (now - player_last_high_loss[client]) < SPEEDHACK_LOSS_GRACE)
+        /* ===== Network veto (shared with aimbot/aimlock) =====
+         * Vetoes on ping, jitter, loss or choke in either direction — far
+         * tighter and more accurate than a bespoke per-module check, and the
+         * data is already being sampled at 10Hz regardless of who reads it.
+         *
+         * A stall/backlog caused by bad connectivity doesn't necessarily end
+         * the instant the veto clears — the server may still be draining
+         * commands that queued up during the bad stretch. Keep suppressing
+         * for a tail after the veto lifts, same role the old loss-only grace
+         * period served. */
+        if (vetoed
+            || (player_last_vetoed[client] > 0.0
+                && (now - player_last_vetoed[client]) < SPEEDHACK_NET_VETO_GRACE))
         {
             continue;
         }
 
-        /* Existing: instantaneous high loss check. */
-        if (skip_due_to_loss(client, 0.15, NetFlow_Incoming))
-            continue;
-
-        /* ===== Latency instability check (CV²) =====
-         * Coefficient of variation squared computed from online EWMA
-         * statistics: variance = E[X²] - (E[X])², CV² = var / mean².
-         *
-         * A CV² > 0.1 means std dev exceeds ~32% of the mean.
-         * Connection quality is the ping module's responsibility.
-         *
-         * Validation from real logs:
-         *   Cheater:    latency ~0.039 ± 0.001 → CV² ≈ 0.0007
-         *   Lagging FP: latency ~0.056 ± 0.022 → CV² ≈ 0.15 */
-        float variance = player_latency_out_sq_ewma[client]
-            - (player_latency_out_ewma[client] * player_latency_out_ewma[client]);
-
-        if (variance < 0.0)
-            variance = 0.0;
-
-        float cv_sq = 0.0;
-        if (player_latency_out_ewma[client] > 0.01)
-            cv_sq = variance / (player_latency_out_ewma[client] * player_latency_out_ewma[client]);
-
-        if (cv_sq > SPEEDHACK_CV_SQ_THRESHOLD)
-            continue;
-
-        /* Existing: choke-based skip. */
-        if (player_avg_choke[client] > 0.3
-            && GetClientAvgChoke(client, NetFlow_Incoming) > 0.2)
-            continue;
-
-        if (player_avg_choke[client] > 0.1
-            && GetClientAvgChoke(client, NetFlow_Incoming) > 0.1)
-            continue;
-
         /* Count usercmds processed in the last second. */
-        int count = 0;
-        int ind = playerinfo_index[client];
-
-        for (int i = 0; i < CMD_LENGTH; i++) {
-            ind = wrap_index(ind - 1);
-
-            float t = playerinfo_time_usercmd[client][ind];
-
-            if (t == 0.0)
-                break;
-
-            if (now - t > 1.0)
-                break;
-
-            count++;
-        }
+        int count = lilac_recent_cmd_count(client, now);
 
         if (float(count) > float(baseline) * SPEEDHACK_CMD_RATIO)
-            lilac_detected_speedhack(client, count, baseline, cv_sq);
+            lilac_detected_speedhack(client, count, baseline);
     }
 
     return Plugin_Continue;
 }
 
-static void lilac_detected_speedhack(int client, int cmdcount, int baseline, float cv_sq)
+static void lilac_detected_speedhack(int client, int cmdcount, int baseline)
 {
     if (playerinfo_banned_flags[client][CHEAT_SPEEDHACK])
         return;
@@ -207,16 +135,19 @@ static void lilac_detected_speedhack(int client, int cmdcount, int baseline, flo
 
     ++speedhack_detection[client];
 
-    char sDetails[256];
+    char sNet[192];
+    lilac_network_format(client, sNet, sizeof(sNet));
+
+    char sDetails[384];
     Format(sDetails, sizeof(sDetails),
-        "Detection: %d | CmdsPerSec: %d | ExpectedMax: ~%d | AvgChoke: %.2f | CV2: %.4f | Current TPS: %d | Baseline TPS: %d | Tickrate: %d",
+        "Detection: %d | CmdsPerSec: %d | ExpectedMax: ~%d | AvgChoke: %.2f | Current TPS: %d | Baseline TPS: %d | Tickrate: %d | %s",
         speedhack_detection[client], cmdcount,
         RoundToFloor(float(baseline) * SPEEDHACK_CMD_RATIO),
         player_avg_choke[client],
-        cv_sq,
         g_iCurrentTPS,
         RoundToNearest(g_fTPSBaselineEWMA),
-        g_iServerTickrate);
+        g_iServerTickrate,
+        sNet);
 
     lilac_save_player_details(client, sDetails);
     lilac_forward_client_cheat(client, CHEAT_SPEEDHACK);

@@ -129,7 +129,7 @@ void lilac_config_setup()
         "Ignore some cheat detections for players who have too much packet loss (bad connection to the server).",
         FCVAR_PROTECTED, true, 0.0, true, 1.0);
     hcvar[CVAR_NET_VETO] = new Convar("lilac_network_veto", "1",
-        "Veto Aimbot & Aimlock detections when the player's connection makes timing-based analysis unreliable (ping, jitter, packet loss or choke). Vetoed detections are still logged.",
+        "Veto Aimbot, Aimlock & Speedhack detections when the player's connection makes timing-based analysis unreliable (ping, jitter, packet loss or choke).",
         FCVAR_PROTECTED, true, 0.0, true, 1.0);
     hcvar[CVAR_AUTO_UPDATE] = new Convar("lilac_auto_update", "0",
         "Automatically update Little Anti-Cheat.",
@@ -142,6 +142,9 @@ void lilac_config_setup()
         FCVAR_PROTECTED, true, 0.0, false, 0.0);
     hcvar[CVAR_INFECTED_DMG] = new Convar("lilac_infected_damage", "1",
         "Detect infected damage exploit (L4D2 only).\n0 = Disabled.\n1 = Log only.\n5 or more = ban on n'th detection (Minimum possible is 5).",
+        FCVAR_PROTECTED, true, 0.0, false, 0.0);
+    hcvar[CVAR_SURVIVOR_DMG] = new Convar("lilac_survivor_damage", "1",
+        "Detect survivor burst-damage exploit against special infected/Tank (L4D2 only). NOT YET CALIBRATED, detection/ban path is disabled in code until real thresholds are set.\n0 = Disabled.\n1 = Log only.\n3 or more = ban on n'th detection (Minimum possible is 3).",
         FCVAR_PROTECTED, true, 0.0, false, 0.0);
 
     for (int i = 0; i < CVAR_MAX; i++) {
@@ -459,6 +462,9 @@ public Action lilac_set_ban_length(int args)
 	else if (StrEqual(feature, "infected_damage", false) || StrEqual(feature, "infected", false)) {
 		index = CHEAT_INFECTED_DMG;
 	}
+	else if (StrEqual(feature, "survivor_damage", false) || StrEqual(feature, "survivor", false)) {
+		index = CHEAT_SURVIVOR_DMG;
+	}
 	else if (StrEqual(feature, "name", false) || StrEqual(feature, "filter", false)) {
 		index = CHEAT_NEWLINE_NAME;
 	}
@@ -496,6 +502,7 @@ public Action lilac_set_ban_length(int args)
         case CHEAT_SPEEDHACK: strcopy(cheat_name, sizeof(cheat_name), "Speedhack");
 		case CHEAT_NEWLINE_NAME: strcopy(cheat_name, sizeof(cheat_name), "Newline Name");
 		case CHEAT_INFECTED_DMG: strcopy(cheat_name, sizeof(cheat_name), "Infected Damage Exploit");
+		case CHEAT_SURVIVOR_DMG: strcopy(cheat_name, sizeof(cheat_name), "Survivor Damage Exploit");
 		default: strcopy(cheat_name, sizeof(cheat_name), "Unknown");
 	}
 	
@@ -767,6 +774,13 @@ public void cvar_change(ConVar convar, const char[] oldValue, const char[] newVa
         if (icvar[CVAR_INFECTED_DMG] > 1
             && icvar[CVAR_INFECTED_DMG] < INFECTED_DMG_BAN_MIN)
             icvar[CVAR_INFECTED_DMG] = INFECTED_DMG_BAN_MIN;
+    }
+    else if (convar == hcvar[CVAR_SURVIVOR_DMG]) {
+        icvar[CVAR_SURVIVOR_DMG] = StringToInt(newValue);
+
+        if (icvar[CVAR_SURVIVOR_DMG] > 1
+            && icvar[CVAR_SURVIVOR_DMG] < SURVIVOR_DMG_BAN_MIN)
+            icvar[CVAR_SURVIVOR_DMG] = SURVIVOR_DMG_BAN_MIN;
     }
     else {
         convar.GetName(cvarname, sizeof(cvarname));

@@ -50,6 +50,7 @@ void lilac_warn_admins(int client, int cheat, int detections)
 	case CHEAT_AIMLOCK:   { strcopy(type, sizeof(type), "Aimlock"); }
 	case CHEAT_SPEEDHACK:     { strcopy(type, sizeof(type), "Speedhack"); }
 	case CHEAT_INFECTED_DMG:  { strcopy(type, sizeof(type), "Infected Damage Exploit"); }
+	case CHEAT_SURVIVOR_DMG:  { strcopy(type, sizeof(type), "Survivor Damage Exploit"); }
 	/* Macros have their own warning system. */
 	default: { return; }
 	}
@@ -91,6 +92,7 @@ void lilac_reset_client(int client)
     lilac_aimbot_reset_client(client);
     lilac_speedhack_reset_client(client);
     lilac_infected_damage_reset_client(client);
+    lilac_survivor_damage_reset_client(client);
     lilac_ping_reset_client(client);
     lilac_convar_reset_client(client);
     lilac_lerp_reset_client(client);
@@ -101,6 +103,7 @@ void lilac_reset_client(int client)
     playerinfo_aimlock[client] = 0;
     playerinfo_time_bumpercart[client] = 0.0;
     playerinfo_time_teleported[client] = 0.0;
+    playerinfo_time_camera_forced[client] = 0.0;
     playerinfo_time_aimlock[client] = 0.0;
     playerinfo_time_process_aimlock[client] = 0.0;
     Format(playerinfo_detected[client], sizeof(playerinfo_detected[]), "");
@@ -141,26 +144,29 @@ void lilac_log_setup_client(int client)
 
 void lilac_log_extra(int client)
 {
-	char map[128], weapon[64];
 	float pos[3], ang[3];
+	char map[128], weapon[64];
 
 	GetClientAbsOrigin(client, pos);
+	get_player_log_angles(client, 0, true, ang);
 	GetCurrentMap(map, sizeof(map));
 	GetClientWeapon(client, weapon, sizeof(weapon));
 
-	get_player_log_angles(client, 0, true, ang);
-
+	/* Latency in ms, Loss/Choke in % — same scale and precision as
+	 * lilac_network_format(), instead of raw 0-1 fractions at the default
+	 * 6 decimal places. */
 	FormatEx(line_buffer, sizeof(line_buffer),
-		"\tPos={%.0f,%.0f,%.0f}, Angles={%.5f,%.5f,%.5f}, Map=\"%s\", Team={%d}, Weapon=\"%s\", Latency={Inc:%f,Out:%f}, Loss={Inc:%f,Out:%f}, Choke={Inc:%f,Out:%f}, ConnectionTime={%f seconds}, GameTime={%f seconds}",
+		"\tTick={%d}, Pos={%.0f,%.0f,%.0f}, Angles={%.5f,%.5f,%.5f}, Map=\"%s\", Team={%d}, Weapon=\"%s\", Latency={Inc:%.1f,Out:%.1f}, Loss={Inc:%.1f,Out:%.1f}, Choke={Inc:%.1f,Out:%.1f}, ConnectionTime={%.1f seconds}, GameTime={%.1f seconds}",
+		GetGameTickCount(),
 		pos[0], pos[1], pos[2],
 		ang[0], ang[1], ang[2],
 		map, GetClientTeam(client), weapon,
-		GetClientAvgLatency(client, NetFlow_Incoming),
-		GetClientAvgLatency(client, NetFlow_Outgoing),
-		GetClientAvgLoss(client, NetFlow_Incoming),
-		GetClientAvgLoss(client, NetFlow_Outgoing),
-		GetClientAvgChoke(client, NetFlow_Incoming),
-		GetClientAvgChoke(client, NetFlow_Outgoing),
+		GetClientAvgLatency(client, NetFlow_Incoming) * 1000.0,
+		GetClientAvgLatency(client, NetFlow_Outgoing) * 1000.0,
+		GetClientAvgLoss(client, NetFlow_Incoming) * 100.0,
+		GetClientAvgLoss(client, NetFlow_Outgoing) * 100.0,
+		GetClientAvgChoke(client, NetFlow_Incoming) * 100.0,
+		GetClientAvgChoke(client, NetFlow_Outgoing) * 100.0,
 		GetClientTime(client), GetGameTime());
 
 	lilac_log(false);
@@ -312,6 +318,66 @@ Delta: %.2f/%.2f | TotalDelta: %.2f/%.2f | FinalDist: %.2f/%.2f | Flags: %d/%d |
     CloseHandle(file);
 }
 
+void lilac_survivor_damage_calib_log_setup()
+{
+    if (FileExists(survivor_dmg_calib_log_file, false, NULL_STRING))
+        return;
+
+    Handle file = OpenFile(survivor_dmg_calib_log_file, "a");
+
+    if (file == null) {
+        PrintToServer("[Lilac] Cannot open survivor damage calibration log file.");
+        return;
+    }
+
+    char date[512];
+    FormatTime(date, sizeof(date), dateformat, GetTime());
+
+    WriteFileLine(file,
+        "=========[Notice]=========\n\
+Survivor Damage Calibration Log — Little Anti-Cheat %s\n\
+Created: %s\n\n\
+Tank-only for now, to keep volume manageable during normal play instead of\n\
+requiring dedicated test sessions. Every hit a survivor lands on the Tank\n\
+is recorded here.\n\
+Fields: Name | SteamID | Weapon | Hit | WindowTotal (1s rolling sum for that\n\
+weapon) | SessionMax (highest WindowTotal ever seen for that weapon) | TankHP (current)\n\n\
+If TankHP is very low (near death), the hit's logged damage may be clamped\n\
+to whatever HP was left rather than the weapon's real output — discard\n\
+those rows when reading a weapon's real max from this file.\n\n\
+These are NOT detections — this module is not enforcing anything yet.\n\
+Use this data to calibrate lilac_survivor_damage.sp's per-weapon thresholds.\n\n",
+        PLUGIN_VERSION, date);
+
+    CloseHandle(file);
+}
+
+void lilac_survivor_damage_calib_log(int attacker, const char[] weapon, int damage, int total, int sessionMax, int tankHealth)
+{
+    Handle file = OpenFile(survivor_dmg_calib_log_file, "a");
+
+    if (file == null) {
+        PrintToServer("[Lilac] Cannot open survivor damage calibration log file.");
+        return;
+    }
+
+    char date[512], steamid[64], buf[512];
+    FormatTime(date, sizeof(date), dateformat, GetTime());
+    GetClientAuthId(attacker, AuthId_Steam2, steamid, sizeof(steamid), true);
+
+    FormatEx(buf, sizeof(buf),
+        "%s [Version %s] \"%N\" | SteamID: %s | Weapon: %s | Hit: %d | WindowTotal: %d | SessionMax: %d | TankHP: %d",
+        date, PLUGIN_VERSION, attacker, steamid, weapon, damage, total, sessionMax, tankHealth);
+
+    for (int i = 0; buf[i]; i++) {
+        if (buf[i] == '\n' || buf[i] == 0x0d) buf[i] = '*';
+        else if (buf[i] < 32) buf[i] = '#';
+    }
+
+    WriteFileLine(file, "%s", buf);
+    CloseHandle(file);
+}
+
 void lilac_log_first_time_setup()
 {
     /* Some admins may not understand how to interpret cheat logs
@@ -383,6 +449,8 @@ void lilac_ban_client(int client, int cheat)
 		"[Little Anti-Cheat %s] Speedhack", PLUGIN_VERSION); }
 	case CHEAT_INFECTED_DMG: { Format(reason, sizeof(reason),
 		"[Little Anti-Cheat %s] Infected Damage Exploit", PLUGIN_VERSION); }
+	case CHEAT_SURVIVOR_DMG: { Format(reason, sizeof(reason),
+		"[Little Anti-Cheat %s] Survivor Damage Exploit", PLUGIN_VERSION); }
 	default: return;
 	}
 
@@ -531,16 +599,43 @@ float angle_delta_true(const float a1[3], const float a2[3])
     return ArcTangent2(GetVectorLength(cross), GetVectorDotProduct(f1, f2)) * LILAC_RAD2DEG;
 }
 
-/* Legacy loss-only check. Kept for modules whose analysis does not depend on
- * inter-command timing: speedhack counts commands per second and infected
- * damage checks damage values, neither distorted by latency or jitter.
- * Aimbot and aimlock use lilac_network_vetoed() instead. */
+/* Legacy loss-only check. Kept for infected_damage, which checks raw damage
+ * values — not distorted by latency or jitter, so the simpler loss-only
+ * check is enough. Aimbot, aimlock and speedhack use lilac_network_vetoed()
+ * instead, since a connection stall can distort all three. */
 bool skip_due_to_loss(int client, float threshold = 0.5, NetFlow flow = NetFlow_Both)
 {
 	if (icvar[CVAR_LOSS_FIX])
 		return GetClientAvgLoss(client, flow) > threshold;
 
 	return false;
+}
+
+/* Number of usercmds actually recorded for this client in the last real
+ * second. Ground truth for "is this client actually still sending commands
+ * on schedule" — independent of whatever the engine's own loss/choke stats
+ * claim, since those are derived from netchannel bookkeeping that can be
+ * tampered with client-side without touching real command delivery. */
+int lilac_recent_cmd_count(int client, float now)
+{
+	int count = 0;
+	int ind = playerinfo_index[client];
+
+	for (int i = 0; i < CMD_LENGTH; i++) {
+		ind = wrap_index(ind - 1);
+
+		float t = playerinfo_time_usercmd[client][ind];
+
+		if (t == 0.0)
+			break;
+
+		if (now - t > 1.0)
+			break;
+
+		count++;
+	}
+
+	return count;
 }
 
 int time_to_ticks(float time)
@@ -567,6 +662,17 @@ bool is_player_valid(int client)
 	return (client >= 1 && client <= MaxClients
 		&& IsClientConnected(client) && IsClientInGame(client)
 		&& !IsClientSourceTV(client));
+}
+
+/* True while this player's camera is being held in forced external/3rd
+ * person view — a standard engine mechanic (m_TimeForceExternalView), used
+ * by third-person/emote/dance plugins and some scripted sequences. Not tied
+ * to any specific plugin: whoever set the prop, the player isn't actually
+ * controlling their view while it's active, so their sent viewangles sit
+ * frozen in a way that would otherwise look identical to a real aimlock. */
+bool lilac_camera_forced_external(int client)
+{
+	return GetEntPropFloat(client, Prop_Send, "m_TimeForceExternalView") > GetGameTime();
 }
 
 void lilac_save_player_details(int client, const char[] details)
