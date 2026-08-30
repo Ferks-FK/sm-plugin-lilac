@@ -29,6 +29,15 @@ static bool aimlock_skip_player(int client)
 		|| playerinfo_banned_flags[client][CHEAT_AIMLOCK]) /* Already banned/logged. */
 		return true;
 
+	/* Stamp while active so the grace check below still covers the short
+	 * window right after the camera is released, not just while forced.
+	 * Only safe to read the entity prop now that client is confirmed valid. */
+	if (lilac_camera_forced_external(client))
+		playerinfo_time_camera_forced[client] = GetGameTime();
+
+	if (GetGameTime() - playerinfo_time_camera_forced[client] < CAMERA_FORCED_GRACE_SECS) /* Forced external view (emote/dance/etc). */
+		return true;
+
 	/* Lightweight mode is enabled, don't process players who aren't in que. */
 	if (icvar[CVAR_AIMLOCK_LIGHT] == 1 && lilac_is_player_in_aimlock_que(client) == false)
 		return true;
