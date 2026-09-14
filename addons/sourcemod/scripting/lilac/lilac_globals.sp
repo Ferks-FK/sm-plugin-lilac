@@ -115,7 +115,7 @@
 #define AIMBOT_FLAG_SMOOTH       (1 << 4) /* Monotonic convergence: counters AimStep-style evasion. */
 #define AIMBOT_FLAG_JITTER       (1 << 5) /* High pre-shot angle variance combined with an accurate shot. */
 
-#define SPEEDHACK_BAN_MIN    5
+#define SPEEDHACK_BAN_MIN    3
 #define SPEEDHACK_CMD_RATIO  1.9 /* Flag if cmds/sec > tickrate * this value. */
 
 /* Network safety veto. This is not a detector: it suppresses punishment when
