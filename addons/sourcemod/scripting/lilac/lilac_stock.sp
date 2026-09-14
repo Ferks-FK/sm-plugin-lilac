@@ -318,66 +318,6 @@ Delta: %.2f/%.2f | TotalDelta: %.2f/%.2f | FinalDist: %.2f/%.2f | Flags: %d/%d |
     CloseHandle(file);
 }
 
-void lilac_survivor_damage_calib_log_setup()
-{
-    if (FileExists(survivor_dmg_calib_log_file, false, NULL_STRING))
-        return;
-
-    Handle file = OpenFile(survivor_dmg_calib_log_file, "a");
-
-    if (file == null) {
-        PrintToServer("[Lilac] Cannot open survivor damage calibration log file.");
-        return;
-    }
-
-    char date[512];
-    FormatTime(date, sizeof(date), dateformat, GetTime());
-
-    WriteFileLine(file,
-        "=========[Notice]=========\n\
-Survivor Damage Calibration Log — Little Anti-Cheat %s\n\
-Created: %s\n\n\
-Tank-only for now, to keep volume manageable during normal play instead of\n\
-requiring dedicated test sessions. Every hit a survivor lands on the Tank\n\
-is recorded here.\n\
-Fields: Name | SteamID | Weapon | Hit | WindowTotal (1s rolling sum for that\n\
-weapon) | SessionMax (highest WindowTotal ever seen for that weapon) | TankHP (current)\n\n\
-If TankHP is very low (near death), the hit's logged damage may be clamped\n\
-to whatever HP was left rather than the weapon's real output — discard\n\
-those rows when reading a weapon's real max from this file.\n\n\
-These are NOT detections — this module is not enforcing anything yet.\n\
-Use this data to calibrate lilac_survivor_damage.sp's per-weapon thresholds.\n\n",
-        PLUGIN_VERSION, date);
-
-    CloseHandle(file);
-}
-
-void lilac_survivor_damage_calib_log(int attacker, const char[] weapon, int damage, int total, int sessionMax, int tankHealth)
-{
-    Handle file = OpenFile(survivor_dmg_calib_log_file, "a");
-
-    if (file == null) {
-        PrintToServer("[Lilac] Cannot open survivor damage calibration log file.");
-        return;
-    }
-
-    char date[512], steamid[64], buf[512];
-    FormatTime(date, sizeof(date), dateformat, GetTime());
-    GetClientAuthId(attacker, AuthId_Steam2, steamid, sizeof(steamid), true);
-
-    FormatEx(buf, sizeof(buf),
-        "%s [Version %s] \"%N\" | SteamID: %s | Weapon: %s | Hit: %d | WindowTotal: %d | SessionMax: %d | TankHP: %d",
-        date, PLUGIN_VERSION, attacker, steamid, weapon, damage, total, sessionMax, tankHealth);
-
-    for (int i = 0; buf[i]; i++) {
-        if (buf[i] == '\n' || buf[i] == 0x0d) buf[i] = '*';
-        else if (buf[i] < 32) buf[i] = '#';
-    }
-
-    WriteFileLine(file, "%s", buf);
-    CloseHandle(file);
-}
-
 void lilac_log_first_time_setup()
 {
     /* Some admins may not understand how to interpret cheat logs
@@ -788,7 +728,8 @@ void lilac_server_lag_reset_log()
 
 void lilac_tickbase_fix_reset_client(int client)
 {
-    g_flTickbaseLastLog[client] = 0.0;
+    g_flTickbaseLastLog[client]      = 0.0;
+    g_flTickbaseAheadLastLog[client] = 0.0;
 }
 
 void lilac_tickbase_fix(int client)
@@ -808,7 +749,15 @@ void lilac_tickbase_fix(int client)
     {
         SetEntProp(client, Prop_Send, "m_nTickBase", serverTick);
         lilac_tickbase_fix_log(client, diff);
+        return;
     }
+
+    /* Ahead case: NOT clamped. Correcting it used to rubber-band legit
+     * low-FPS/stuttering players, so this is log-only for now. */
+    int ahead_threshold = tick_rate * TICKBASE_AHEAD_LOG_SECS;
+
+    if (-diff > ahead_threshold)
+        lilac_tickbase_fix_log_ahead(client, -diff);
 }
 
 static void lilac_tickbase_fix_log(int client, int magnitude)
@@ -836,6 +785,36 @@ static void lilac_tickbase_fix_log(int client, int magnitude)
 
     Format(line_buffer, sizeof(line_buffer),
         "%s tickbase manipulation: %d ticks (%.1fs) behind. Clamped.",
+        line_buffer, magnitude, float(magnitude) * GetTickInterval());
+
+    lilac_log(true);
+
+    if (icvar[CVAR_LOG_EXTRA])
+        lilac_log_extra(client);
+}
+
+/* Calibration-only. Can grow a detection counter/ban path once real data
+ * shows where a stutter ends and sustained abuse begins. */
+static void lilac_tickbase_fix_log_ahead(int client, int magnitude)
+{
+    if (!icvar[CVAR_LOG])
+        return;
+
+    if (GetGameTime() - playerinfo_time_teleported[client] < 3.0)
+        return;
+
+    if (lilac_server_is_lagging())
+        return;
+
+    float now = GetGameTime();
+    if (now - g_flTickbaseAheadLastLog[client] < 5.0)
+        return;
+
+    g_flTickbaseAheadLastLog[client] = now;
+    lilac_log_setup_client(client);
+
+    Format(line_buffer, sizeof(line_buffer),
+        "%s tickbase manipulation: %d ticks (%.1fs) ahead. Not clamped (monitoring only).",
         line_buffer, magnitude, float(magnitude) * GetTickInterval());
 
     lilac_log(true);

@@ -89,7 +89,6 @@ public APLRes AskPluginLoad2(Handle hMyself, bool bLate, char[] sError, int err_
         BuildPath(Path_SM, log_file, sizeof(log_file), "logs/lilac.log");
         BuildPath(Path_SM, smooth_telemetry_log_file, sizeof(smooth_telemetry_log_file), "logs/lilac_smooth_telemetry.log");
         BuildPath(Path_SM, angle_metric_log_file, sizeof(angle_metric_log_file), "logs/lilac_angle_metric.log");
-        BuildPath(Path_SM, survivor_dmg_calib_log_file, sizeof(survivor_dmg_calib_log_file), "logs/lilac_survivor_damage_calib.log");
 
         return APLRes_Success;
     }
@@ -172,13 +171,6 @@ public void OnPluginStart()
 
     if (icvar[CVAR_LOG])
         lilac_log_first_time_setup();
-
-    /* Independent of CVAR_LOG on purpose — this is a calibration tool, not
-     * the main cheat log, and its data lines are already written
-     * unconditionally (see lilac_survivor_damage_calib_log()). Setting it up
-     * here too means the file's header is never missing regardless of the
-     * main log's on/off state. */
-    lilac_survivor_damage_calib_log_setup();
 }
 
 public void OnAllPluginsLoaded()

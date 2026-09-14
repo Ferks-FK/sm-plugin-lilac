@@ -137,14 +137,14 @@ void lilac_config_setup()
     hcvar[CVAR_DATABASE] = new Convar("lilac_database", "",
         "Database to log detections to.\nempty = don't log to database\ndatabase name = log to this database (MySQL & SQLite supported)",
         FCVAR_PROTECTED);
-    hcvar[CVAR_SPEEDHACK] = new Convar("lilac_speedhack", "1",
+    hcvar[CVAR_SPEEDHACK] = new Convar("lilac_speedhack", "3",
         "Detect Speedhack.\n0 = Disabled.\n1 = Log only.\n5 or more = ban on n'th detection (Minimum possible is 5).",
         FCVAR_PROTECTED, true, 0.0, false, 0.0);
-    hcvar[CVAR_INFECTED_DMG] = new Convar("lilac_infected_damage", "1",
+    hcvar[CVAR_INFECTED_DMG] = new Convar("lilac_infected_damage", "3",
         "Detect infected damage exploit (L4D2 only).\n0 = Disabled.\n1 = Log only.\n5 or more = ban on n'th detection (Minimum possible is 5).",
         FCVAR_PROTECTED, true, 0.0, false, 0.0);
-    hcvar[CVAR_SURVIVOR_DMG] = new Convar("lilac_survivor_damage", "1",
-        "Detect survivor burst-damage exploit against special infected/Tank (L4D2 only). NOT YET CALIBRATED, detection/ban path is disabled in code until real thresholds are set.\n0 = Disabled.\n1 = Log only.\n3 or more = ban on n'th detection (Minimum possible is 3).",
+    hcvar[CVAR_SURVIVOR_DMG] = new Convar("lilac_survivor_damage", "3",
+        "Detect survivor burst-damage exploit against the Tank (L4D2 only).\n0 = Disabled.\n1 = Log only.\n3 or more = ban on n'th detection (Minimum possible is 3).",
         FCVAR_PROTECTED, true, 0.0, false, 0.0);
 
     for (int i = 0; i < CVAR_MAX; i++) {

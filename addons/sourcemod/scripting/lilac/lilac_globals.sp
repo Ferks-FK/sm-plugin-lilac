@@ -144,10 +144,14 @@
 #define TICKBASE_CLAMP_SECS   2
 #define TICKBASE_LOG_SECS    25
 
+/* Tickbase running ahead of the server, not behind. Log-only, see
+ * lilac_tickbase_fix_log_ahead(). */
+#define TICKBASE_AHEAD_LOG_SECS  2
+
 #define PLUGIN_NAME      "[Lilac] Little Anti-Cheat"
 #define PLUGIN_AUTHOR    "J_Tanzanite, Ferks-FK"
 #define PLUGIN_DESC      "An opensource Anti-Cheat"
-#define PLUGIN_VERSION   "1.8.3"
+#define PLUGIN_VERSION   "1.8.4"
 #define PLUGIN_URL       "https://github.com/J-Tanzanite/Little-Anti-Cheat"
 
 /* Set to 0 to remove all shadow-metric code from the build. */
@@ -189,6 +193,7 @@ bool  g_bTPSWindowArmed      = false;
 
 // Tracks whether the server is currently in a lag pause state.
 float g_flTickbaseLastLog[MAXPLAYERS + 1];
+float g_flTickbaseAheadLastLog[MAXPLAYERS + 1];
 
 /* Convars. */
 Convar hcvar[CVAR_MAX]; /* ConVar = built in SourceMod  |  Convar = kidfearless's convar_class */
@@ -218,7 +223,6 @@ char dateformat[512] = "%Y/%m/%d %H:%M:%S";
 char log_file[PLATFORM_MAX_PATH];
 char smooth_telemetry_log_file[PLATFORM_MAX_PATH];
 char angle_metric_log_file[PLATFORM_MAX_PATH];
-char survivor_dmg_calib_log_file[PLATFORM_MAX_PATH];
 float max_angles[3] = {89.01, 0.0, 50.01};
 Handle forwardhandle = INVALID_HANDLE;
 Handle forwardhandleban = INVALID_HANDLE;
