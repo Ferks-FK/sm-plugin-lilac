@@ -148,8 +148,25 @@ public void OnPluginStart()
     CreateTimer(0.1, timer_sample_network, _, TIMER_REPEAT);
     CreateTimer(60.0 * 5.0, timer_decrement_macro, _, TIMER_REPEAT);
 
+    /* Just a fallback until OnGameFrame's first tick confirms the real,
+     * settled tickrate below — the server may not have finished applying
+     * it yet this early. */
     tick_rate = RoundToNearest(1.0 / GetTickInterval());
+    lilac_apply_tick_settings();
 
+    /* This sets up convars and such. */
+    lilac_config_setup();
+
+    if (icvar[CVAR_LOG])
+        lilac_log_first_time_setup();
+}
+
+/* Everything derived from tick_rate. Called once from OnPluginStart (using
+ * whatever GetTickInterval() reports that early, which can be wrong), then
+ * again from OnGameFrame once g_iServerTickrate confirms the real, settled
+ * value — see the correction there. */
+static void lilac_apply_tick_settings()
+{
     /* Ignore low tickrates. */
     macro_max = (tick_rate >= 60 && tick_rate <= MACRO_LOG_LENGTH) ? 20 : 0;
 
@@ -165,12 +182,6 @@ public void OnPluginStart()
     }
     bhop_settings_min[BHOP_INDEX_JUMP] = -1;
     bhop_settings_min[BHOP_INDEX_AIR] = 0;
-
-    /* This sets up convars and such. */
-    lilac_config_setup();
-
-    if (icvar[CVAR_LOG])
-        lilac_log_first_time_setup();
 }
 
 public void OnAllPluginsLoaded()
@@ -353,6 +364,16 @@ public void OnGameFrame()
     if (g_iServerTickrate == 0)
     {
         g_iServerTickrate   = RoundToNearest(1.0 / GetTickInterval());
+
+        /* Correct tick_rate (and everything derived from it) if the early
+         * OnPluginStart read above was wrong — g_iServerTickrate is the
+         * trustworthy one, recomputed fresh per map. */
+        if (tick_rate != g_iServerTickrate)
+        {
+            tick_rate = g_iServerTickrate;
+            lilac_apply_tick_settings();
+            lilac_bhop_set_preset();
+        }
     }
 
     /* Grace period after map start — engine is still settling. */

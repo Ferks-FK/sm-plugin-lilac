@@ -740,6 +740,9 @@ void lilac_tickbase_fix(int client)
     if (!IsPlayerAlive(client))
         return;
 
+    if (tick_rate <= 0)
+        return;
+
     int serverTick = GetGameTickCount();
     int diff       = serverTick - GetEntProp(client, Prop_Send, "m_nTickBase");
     int clamp_threshold = tick_rate * TICKBASE_CLAMP_SECS;

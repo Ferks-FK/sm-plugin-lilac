@@ -817,7 +817,7 @@ static int bclamp(int n, int idx)
 	return ((n < bhop_settings_min[idx]) ? bhop_settings_min[idx] : n);
 }
 
-static void lilac_bhop_set_preset()
+void lilac_bhop_set_preset()
 {
 	int mode = intabs(icvar[CVAR_BHOP]);
 
