@@ -4,13 +4,17 @@
 	{
 		"Version"
 		{
-			"Latest"	"1.8.2"
+			"Latest"	"1.8.4"
 		}
 
-		"Notes" "Update speedhack for bad connections."
-		"Notes" "Convar Module: Update to support range/max values."
-		"Notes" "Convar Module: Added more convars for check."
-		"Notes" "Convar Module: Fixed a bug where the first convar was ignored."
+		"Notes" "Add new Survivor Damage burst-exploit detection module (L4D2)."
+		"Notes" "Add server TPS detection to pause Speedhack checks during server lag/stalls."
+		"Notes" "Fix stale tickrate read that was silently affecting Bhop, Macro and tickbase-clamp thresholds."
+		"Notes" "Fix Bhop off-by-one on a streak's first jump, a Min/Max detection blind spot, and Total=1 not banning on the first detection."
+		"Notes" "Improve network loss/choke veto shared by Aimbot, Aimlock and Speedhack."
+		"Notes" "Fix SQL escaping in database logging."
+		"Notes" "Update Speedhack ban minimum to 3 detections."
+		"Notes" "Add MatchID display support in detections (AutoRecorder integration)."
 	}
 
 	"Files"
@@ -30,20 +34,23 @@
 		"Plugin"	"Path_SM/translations/tr/lilac.phrases.txt"
 		"Plugin"	"Path_SM/translations/ua/lilac.phrases.txt"
 		"Source"	"Path_SM/scripting/lilac.sp"
-		"Source"	"Path_SM/scripting/lilac/lilac_globals.sp"
 		"Source"	"Path_SM/scripting/lilac/lilac_aimbot.sp"
 		"Source"	"Path_SM/scripting/lilac/lilac_aimlock.sp"
 		"Source"	"Path_SM/scripting/lilac/lilac_angles.sp"
-		"Source"	"Path_SM/scripting/lilac/lilac_anti_duck_delay.sp"
 		"Source"	"Path_SM/scripting/lilac/lilac_backtrack.sp"
 		"Source"	"Path_SM/scripting/lilac/lilac_bhop.sp"
 		"Source"	"Path_SM/scripting/lilac/lilac_config.sp"
 		"Source"	"Path_SM/scripting/lilac/lilac_convar.sp"
+		"Source"	"Path_SM/scripting/lilac/lilac_database.sp"
+		"Source"	"Path_SM/scripting/lilac/lilac_globals.sp"
+		"Source"	"Path_SM/scripting/lilac/lilac_infected_damage.sp"
 		"Source"	"Path_SM/scripting/lilac/lilac_lerp.sp"
 		"Source"	"Path_SM/scripting/lilac/lilac_macro.sp"
+		"Source"	"Path_SM/scripting/lilac/lilac_network.sp"
 		"Source"	"Path_SM/scripting/lilac/lilac_ping.sp"
 		"Source"	"Path_SM/scripting/lilac/lilac_speedhack.sp"
 		"Source"	"Path_SM/scripting/lilac/lilac_stock.sp"
 		"Source"	"Path_SM/scripting/lilac/lilac_string.sp"
+		"Source"	"Path_SM/scripting/lilac/lilac_survivor_damage.sp"
 	}
 }

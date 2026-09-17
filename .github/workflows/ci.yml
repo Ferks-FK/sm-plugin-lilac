@@ -59,6 +59,30 @@ jobs:
           tag: latest
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
+  sync-updatefile:
+    name: Sync updatefile.txt
+    needs: build
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Sync version and file list
+        run: python3 .github/scripts/sync_updatefile.py
+
+      - name: Commit if changed
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- updatefile.txt; then
+            echo "updatefile.txt already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add updatefile.txt
+          git commit -m "chore: sync updatefile.txt with current version and files [skip ci]"
+          git push
+
   release:
     name: Release
     needs: [build, tag]
