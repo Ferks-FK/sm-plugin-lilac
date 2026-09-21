@@ -169,9 +169,13 @@ public void query_reply(QueryCookie cookie, int client, ConVarQueryResult result
         return;
 
     /* Check against convar rules */
+    bool rule_found = false;
+
     for (int i = 0; i < sizeof(convar_rules); i++) {
         if (!StrEqual(convar_rules[i].name, cvarName, false))
             continue;
+
+        rule_found = true;
 
         /* Normalize boolean string values before validation. */
         char normalizedValue[32];
@@ -210,6 +214,10 @@ public void query_reply(QueryCookie cookie, int client, ConVarQueryResult result
 
         break;
     }
+
+    /* No rule for this cvar means nothing to judge, not a violation. */
+    if (!rule_found)
+        return;
 
     if (lilac_forward_allow_cheat_detection(client, CHEAT_CONVAR) == false)
         return;
