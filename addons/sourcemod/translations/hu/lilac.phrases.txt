@@ -23,6 +23,17 @@
 		"hu"		"A pinged túl magas. ({1}) A maximális megengedett érték: {2}."
 	}
 
+	"ping_fine_again"
+	{
+		"hu"		"A pinged újra rendben van, biztonságosan csatlakozhatsz egy csapathoz és játszhatsz."
+	}
+
+	"ping_kick_warning"
+	{
+		"#format"	"{1:d},{2:.0f},{3:d}"
+		"hu"		"FIGYELEM: Ki leszel rúgva {1} másodpercen belül, ha a pinged túl magas marad! ({2} / {3} max)"
+	}
+
 	"kick_ban_generic"
 	{
 		"hu"		"Banolva lettél erről a szerverről."

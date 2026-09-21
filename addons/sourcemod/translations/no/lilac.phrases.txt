@@ -23,6 +23,17 @@
 		"no"		"Nettverk forsinkelsen (Ping) din er for høy ({1} / {2} maks)"
 	}
 
+	"ping_fine_again"
+	{
+		"no"		"Pingen din ser ut til å være i orden igjen, så det er trygt å bli med i et lag og spille."
+	}
+
+	"ping_kick_warning"
+	{
+		"#format"	"{1:d},{2:.0f},{3:d}"
+		"no"		"ADVARSEL: Du blir sparket ut om {1} sekunder hvis pingen din forblir for høy! ({2} / {3} maks)"
+	}
+
 	"kick_ban_generic"
 	{
 		"no"		"Du har blitt utestengt fra denne serveren på grunn av juksing"

@@ -20,6 +20,16 @@
 		"pl"		"Twój ping jest za wysoki ({1} / {2} maks)"
 	}
 
+	"ping_fine_again"
+	{
+		"pl"		"Twój ping wygląda już w porządku, możesz bezpiecznie dołączyć do drużyny i grać."
+	}
+
+	"ping_kick_warning"
+	{
+		"pl"		"OSTRZEŻENIE: Zostaniesz wyrzucony z serwera za {1} sekund, jeśli Twój ping nadal będzie za wysoki! ({2} / {3} maks)"
+	}
+
 	"kick_ban_generic"
 	{
 		"pl"		"Zostałeś zbanowany na tym serwerze"

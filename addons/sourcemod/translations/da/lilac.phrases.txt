@@ -23,6 +23,17 @@
 		"da"		"Din ping er for høj ({1} / {2} max)"
 	}
 
+	"ping_fine_again"
+	{
+		"da"		"Din ping ser ud til at være fin igen, så du kan trygt tilslutte dig et hold og spille."
+	}
+
+	"ping_kick_warning"
+	{
+		"#format"	"{1:d},{2:.0f},{3:d}"
+		"da"		"ADVARSEL: Du bliver smidt ud om {1} sekunder, hvis din ping forbliver for høj! ({2} / {3} max)"
+	}
+
 	"kick_ban_generic"
 	{
 		"da"		"Du er blevet banned fra denne server"

@@ -23,6 +23,17 @@
 		"ro"		"Ping-ul tău este prea mare ({1} / {2} max)"
 	}
 
+	"ping_fine_again"
+	{
+		"ro"		"Ping-ul tău pare să fie din nou în regulă, așa că te poți alătura unei echipe și poți juca în siguranță."
+	}
+
+	"ping_kick_warning"
+	{
+		"#format"	"{1:d},{2:.0f},{3:d}"
+		"ro"		"AVERTISMENT: Vei fi dat afară în {1} sec. dacă ping-ul tău rămâne prea mare! ({2} / {3} max)"
+	}
+
 	"kick_ban_generic"
 	{
 		"ro"		"Ai fost banat pe acest server"

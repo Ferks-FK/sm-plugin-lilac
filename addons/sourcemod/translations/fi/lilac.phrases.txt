@@ -23,6 +23,17 @@
 		"fi"		"Viiveesi on liian korkea ({1} / {2} max)"
 	}
 
+	"ping_fine_again"
+	{
+		"fi"		"Viiveesi näyttää olevan taas kunnossa, voit turvallisesti liittyä takaisin joukkueeseen ja pelata."
+	}
+
+	"ping_kick_warning"
+	{
+		"#format"	"{1:d},{2:.0f},{3:d}"
+		"fi"		"VAROITUS: Sinut potkitaan pois {1} sekunnin kuluttua, jos viiveesi pysyy liian korkeana! ({2} / {3} max)"
+	}
+
 	"kick_ban_generic"
 	{
 		"fi"		"Sinut on bannattu tältä palvelimelta"

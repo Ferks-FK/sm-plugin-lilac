@@ -20,6 +20,16 @@
 		"pt"		"A sua latência está muito alta ({1} / máx. {2})"
 	}
 
+	"ping_fine_again"
+	{
+		"pt"		"A sua latência parece estar normal novamente, já é seguro voltar a entrar em um time e jogar."
+	}
+
+	"ping_kick_warning"
+	{
+		"pt"		"AVISO: Você será expulso(a) em {1} segundos se a sua latência continuar muito alta! ({2} / máx. {3})"
+	}
+
 	"kick_ban_generic"
 	{
 		"pt"		"Você foi banido(a) deste servidor"

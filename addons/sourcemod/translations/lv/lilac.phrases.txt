@@ -23,6 +23,17 @@
 		"lv"		"Tavs pings ir pārāk liels ({1} / {2} max)"
 	}
 
+	"ping_fine_again"
+	{
+		"lv"		"Šķiet, ka tavs pings atkal ir kārtībā, vari droši pievienoties komandai un spēlēt."
+	}
+
+	"ping_kick_warning"
+	{
+		"#format"	"{1:d},{2:.0f},{3:d}"
+		"lv"		"BRĪDINĀJUMS: Tevi izmetīs pēc {1} sekundēm, ja tavs pings paliks pārāk liels! ({2} / {3} max)"
+	}
+
 	"kick_ban_generic"
 	{
 		"lv"		"Tu tiki banots no šī servera"

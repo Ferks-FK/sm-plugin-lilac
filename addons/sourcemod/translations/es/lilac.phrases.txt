@@ -23,6 +23,17 @@
 		"es"		"Tu Ping es demasiado alto ({1} / {2} máx)"
 	}
 
+	"ping_fine_again"
+	{
+		"es"		"Tu Ping parece estar bien de nuevo, ya puedes volver a unirte a un equipo y jugar sin problemas."
+	}
+
+	"ping_kick_warning"
+	{
+		"#format"	"{1:d},{2:.0f},{3:d}"
+		"es"		"ADVERTENCIA: ¡Se te expulsará del servidor en {1} segundos si tu Ping sigue siendo demasiado alto! ({2} / {3} máx)"
+	}
+
 	"kick_ban_generic"
 	{
 		"es"		"Has sido prohibido en este servidor"

@@ -20,6 +20,16 @@
 		"se"		"Din ping är för hög ({1} / {2} max)"
 	}
 
+	"ping_fine_again"
+	{
+		"se"		"Din ping verkar vara bra igen, så det är säkert att gå med i ett lag och spela."
+	}
+
+	"ping_kick_warning"
+	{
+		"se"		"VARNING: Du kommer att kickas om {1} sekunder om din ping förblir för hög! ({2} / {3} max)"
+	}
+
 	"kick_ban_generic"
 	{
 		"se"		"Du har blivit bannlyst från denna server"

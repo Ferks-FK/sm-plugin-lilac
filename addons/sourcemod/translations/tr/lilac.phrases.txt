@@ -23,6 +23,17 @@
 		"tr"		"Pinginiz çok yüksek (en fazla {1} / {2})"
 	}
 
+	"ping_fine_again"
+	{
+		"tr"		"Pinginiz yeniden normal görünüyor, artık güvenle bir takıma katılıp oynayabilirsiniz."
+	}
+
+	"ping_kick_warning"
+	{
+		"#format"	"{1:d},{2:.0f},{3:d}"
+		"tr"		"UYARI: Pinginiz çok yüksek kalmaya devam ederse {1} saniye içinde sunucudan atılacaksınız! ({2} / en fazla {3})"
+	}
+
 	"kick_ban_generic"
 	{
 		"tr"		"Bu sunucudan yasaklandınız"
