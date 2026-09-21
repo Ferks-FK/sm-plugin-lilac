@@ -19,16 +19,6 @@
 #define INF_DMG_WINDOW      1.0   /* Rolling window in seconds. */
 #define INF_DMG_BUF_SIZE    128    /* Ring buffer slots per player. */
 
-/* L4D2 zombie classes. */
-#define L4D2_ZC_SMOKER   1
-#define L4D2_ZC_BOOMER   2
-#define L4D2_ZC_HUNTER   3
-#define L4D2_ZC_SPITTER  4
-#define L4D2_ZC_JOCKEY   5
-#define L4D2_ZC_CHARGER  6
-#define L4D2_ZC_WITCH    7
-#define L4D2_ZC_TANK     8
-
 /* Maximum damage per INF_DMG_WINDOW before flagging, indexed by zombie class.
  * 0 disables detection for that class. */
 static const int inf_dmg_threshold[9] = {0, 15, 0, 45, 60, 20, 50, 0, 72};

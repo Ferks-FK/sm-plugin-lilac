@@ -45,7 +45,7 @@ void lilac_config_setup()
         "0 = Disabled.\n1 = Log extra information on player banned.\n2 = Log extra information on everything.",
         FCVAR_PROTECTED, true, 0.0, true, 2.0);
     hcvar[CVAR_LOG_MISC] = new Convar("lilac_log_misc", "0",
-        "Log when players are kicked for misc features, like interp exploits, too high ping and on convar response failure.",
+        "Log when players are kicked for misc features, like interp exploits and on convar response failure.",
         FCVAR_PROTECTED, true, 0.0, true, 1.0);
     hcvar[CVAR_LOG_DATE] = new Convar("lilac_log_date", "{year}/{month}/{day} {hour}:{minute}:{second}",
         "Which date & time format to use when logging. Type: \"lilac_date_list\" for more info.",
@@ -681,9 +681,9 @@ public void cvar_change(ConVar convar, const char[] oldValue, const char[] newVa
     else if (convar == hcvar[CVAR_AIMBOT]) {
         icvar[CVAR_AIMBOT] = StringToInt(newValue);
         
-        if (icvar[CVAR_AIMBOT] > 1 &&
+        if (icvar[CVAR_AIMBOT] > 2 &&
             icvar[CVAR_AIMBOT] < AIMBOT_BAN_MIN)
-            icvar[CVAR_AIMBOT] = 5;
+            icvar[CVAR_AIMBOT] = AIMBOT_BAN_MIN;
     }
     else if (convar == hcvar[CVAR_AIMBOT_AUTOSHOOT]) {
         icvar[CVAR_AIMBOT_AUTOSHOOT] = StringToInt(newValue);
@@ -691,9 +691,9 @@ public void cvar_change(ConVar convar, const char[] oldValue, const char[] newVa
     else if (convar == hcvar[CVAR_AIMLOCK]) {
         icvar[CVAR_AIMLOCK] = StringToInt(newValue);
         
-        if (icvar[CVAR_AIMLOCK] > 1
+        if (icvar[CVAR_AIMLOCK] > 2
             && icvar[CVAR_AIMLOCK] < AIMLOCK_BAN_MIN)
-            icvar[CVAR_AIMLOCK] = 5;
+            icvar[CVAR_AIMLOCK] = AIMLOCK_BAN_MIN;
     }
     else if (convar == hcvar[CVAR_AIMLOCK_LIGHT]) {
         icvar[CVAR_AIMLOCK_LIGHT] = StringToInt(newValue);
@@ -763,17 +763,9 @@ public void cvar_change(ConVar convar, const char[] oldValue, const char[] newVa
     }
     else if (convar == hcvar[CVAR_INFECTED_DMG]) {
         icvar[CVAR_INFECTED_DMG] = StringToInt(newValue);
-
-        if (icvar[CVAR_INFECTED_DMG] > 1
-            && icvar[CVAR_INFECTED_DMG] < INFECTED_DMG_BAN_MIN)
-            icvar[CVAR_INFECTED_DMG] = INFECTED_DMG_BAN_MIN;
     }
     else if (convar == hcvar[CVAR_SURVIVOR_DMG]) {
         icvar[CVAR_SURVIVOR_DMG] = StringToInt(newValue);
-
-        if (icvar[CVAR_SURVIVOR_DMG] > 1
-            && icvar[CVAR_SURVIVOR_DMG] < SURVIVOR_DMG_BAN_MIN)
-            icvar[CVAR_SURVIVOR_DMG] = SURVIVOR_DMG_BAN_MIN;
     }
     else {
         convar.GetName(cvarname, sizeof(cvarname));

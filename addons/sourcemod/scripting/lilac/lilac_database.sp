@@ -113,12 +113,9 @@ void database_log(int client, char[] cheat, int detection=DATABASE_BAN, float da
 
 	char name[MAX_NAME_LENGTH];
 	if (!GetClientName(client, name, sizeof(name)))
-		strcopy(name, sizeof(name), "<​no name>");
-	else {
+		strcopy(name, sizeof(name), "<no name>");
+	else
 		TrimString(name);
-		if (strlen(name) >= 128) /* prevents exploits: don't exceed 127 characters else somes names could break the query */
-			strcopy(name, sizeof(name), "<​no name>");
-	}
 
 	GetClientAuthId(client, AuthId_Steam2, steamid, sizeof(steamid), true);
 	GetClientIP(client, ip, sizeof(ip), true);

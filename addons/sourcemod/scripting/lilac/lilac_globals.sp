@@ -106,6 +106,16 @@
 #define INFECTED_DMG_BAN_MIN 3
 #define SURVIVOR_DMG_BAN_MIN 3
 
+/* L4D2 zombie classes (m_zombieClass). */
+#define L4D2_ZC_SMOKER   1
+#define L4D2_ZC_BOOMER   2
+#define L4D2_ZC_HUNTER   3
+#define L4D2_ZC_SPITTER  4
+#define L4D2_ZC_JOCKEY   5
+#define L4D2_ZC_CHARGER  6
+#define L4D2_ZC_WITCH    7
+#define L4D2_ZC_TANK     8
+
 #define AIMBOT_BAN_MIN           5
 #define AIMBOT_MAX_TOTAL_DELTA   (180.0 * 2.5)
 #define AIMBOT_FLAG_REPEAT       (1 << 0)

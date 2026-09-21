@@ -23,6 +23,17 @@
 		"en"		"Your ping is too high ({1} / {2} max)"
 	}
 
+	"ping_fine_again"
+	{
+		"en"		"Your ping appears to be fine again, it is safe to rejoin a team and play."
+	}
+
+	"ping_kick_warning"
+	{
+		"#format"	"{1:d},{2:.0f},{3:d}"
+		"en"		"WARNING: You will be kicked in {1} seconds if your ping stays too high! ({2} / {3} max)"
+	}
+
 	"kick_ban_generic"
 	{
 		"en"		"You have been banned from this server"
