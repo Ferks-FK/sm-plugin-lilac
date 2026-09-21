@@ -83,7 +83,7 @@ static void lilac_survivor_damage_init_maps()
 	weapon_dmg_threshold.SetValue("smg_silenced", 429);
 	weapon_dmg_threshold.SetValue("pumpshotgun", 504);
 	weapon_dmg_threshold.SetValue("shotgun_chrome", 502);
-	weapon_dmg_threshold.SetValue("prop_minigun_l4d1", 269);
+	weapon_dmg_threshold.SetValue("prop_minigun_l4d1", 360);
 
 	/* Melee. */
 	weapon_dmg_threshold.SetValue("melee", 588);
