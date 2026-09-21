@@ -396,35 +396,41 @@ void lilac_ban_client(int client, int cheat)
 
 	lilac_forward_client_ban(client, cheat);
 
-
-	/* Try to ban with MateralAdmin first,
-	 * if that fails, proceed to SourceBans, then SourceBans++,
-	 * And lastly, BaseBans. */
-
-
-	if (icvar[CVAR_MA] && NATIVE_EXISTS("MABanPlayer")) {
+	switch (lilac_get_ban_backend()) {
+	case BAN_BACKEND_MATERIALADMIN: {
 		MABanPlayer(0, client, MA_BAN_STEAM, get_ban_length(cheat), reason);
-		CreateTimer(5.0, timer_kick, GetClientUserId(client));
-		return;
+	}
+	case BAN_BACKEND_SOURCEBANSPP: {
+		SBPP_BanPlayer(0, client, get_ban_length(cheat), reason);
+	}
+	case BAN_BACKEND_SOURCEBANS: {
+		SBBanPlayer(0, client, get_ban_length(cheat), reason);
+	}
+	default: {
+		BanClient(client, get_ban_length(cheat), BANFLAG_AUTO, reason, reason, "lilac", 0);
+	}
 	}
 
+	CreateTimer(5.0, timer_kick, GetClientUserId(client));
+}
+
+/* Which plugin bans go through, in priority order: MaterialAdmin,
+ * SourceBans++, SourceBans (old), and lastly BaseBans. Also used by
+ * lilac_ban_status, so what it reports is what actually happens. */
+int lilac_get_ban_backend()
+{
+	if (icvar[CVAR_MA] && NATIVE_EXISTS("MABanPlayer"))
+		return BAN_BACKEND_MATERIALADMIN;
 
 	if (icvar[CVAR_SB]) {
-		if (NATIVE_EXISTS("SBPP_BanPlayer")) {
-			SBPP_BanPlayer(0, client, get_ban_length(cheat), reason);
-			CreateTimer(5.0, timer_kick, GetClientUserId(client));
-			return;
-		}
-		else if (NATIVE_EXISTS("SBBanPlayer")) {
-			SBBanPlayer(0, client, get_ban_length(cheat), reason);
-			CreateTimer(5.0, timer_kick, GetClientUserId(client));
-			return;
-		}
+		if (NATIVE_EXISTS("SBPP_BanPlayer"))
+			return BAN_BACKEND_SOURCEBANSPP;
+
+		if (NATIVE_EXISTS("SBBanPlayer"))
+			return BAN_BACKEND_SOURCEBANS;
 	}
 
-
-	BanClient(client, get_ban_length(cheat), BANFLAG_AUTO, reason, reason, "lilac", 0);
-	CreateTimer(5.0, timer_kick, GetClientUserId(client));
+	return BAN_BACKEND_BASEBANS;
 }
 
 public Action timer_kick(Handle timer, int userid)

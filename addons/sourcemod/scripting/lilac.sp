@@ -186,11 +186,6 @@ static void lilac_apply_tick_settings()
 
 public void OnAllPluginsLoaded()
 {
-    sourcebanspp_exist = LibraryExists("sourcebans++");
-    sourcebans_exist = LibraryExists("sourcebans");
-    materialadmin_exist = LibraryExists("materialadmin");
-    autorecorder_exist = LibraryExists("autorecorder");
-
     if (LibraryExists("updater"))
         lilac_update_url();
 
@@ -200,28 +195,8 @@ public void OnAllPluginsLoaded()
 
 public void OnLibraryAdded(const char []name)
 {
-    if (StrEqual(name, "sourcebans++"))
-        sourcebanspp_exist = true;
-    else if (StrEqual(name, "sourcebans"))
-        sourcebans_exist = true;
-    else if (StrEqual(name, "materialadmin"))
-        materialadmin_exist = true;
-    else if (StrEqual(name, "autorecorder"))
-        autorecorder_exist = true;
-    else if (StrEqual(name, "updater"))
+    if (StrEqual(name, "updater"))
         lilac_update_url();
-}
-
-public void OnLibraryRemoved(const char []name)
-{
-    if (StrEqual(name, "sourcebans++"))
-        sourcebanspp_exist = false;
-    else if (StrEqual(name, "sourcebans"))
-        sourcebans_exist = false;
-    else if (StrEqual(name, "materialadmin"))
-        materialadmin_exist = false;
-    else if (StrEqual(name, "autorecorder"))
-        autorecorder_exist = false;
 }
 
 void lilac_update_url()

@@ -228,12 +228,6 @@ Handle forwardhandle = INVALID_HANDLE;
 Handle forwardhandleban = INVALID_HANDLE;
 Handle forwardhandleallow = INVALID_HANDLE;
 
-/* External plugins. */
-bool sourcebans_exist = false;
-bool sourcebanspp_exist = false;
-bool materialadmin_exist = false;
-bool autorecorder_exist = false;
-
 /* Logging.
  * Todo: Might wanna move a lot of this variables to
  * their own files if they are only used there.
@@ -262,6 +256,11 @@ int   playerinfo_net_count[MAXPLAYERS + 1];
 /* Forward declarations so we don't need third-party include files. */
 
 #define MA_BAN_STEAM  1
+
+#define BAN_BACKEND_BASEBANS       0
+#define BAN_BACKEND_SOURCEBANS     1
+#define BAN_BACKEND_SOURCEBANSPP   2
+#define BAN_BACKEND_MATERIALADMIN  3
 
 native Function IRC_MsgFlaggedChannels(const char[] flag, const char[] format, any ...);
 native Function MABanPlayer(int iClient, int iTarget, int iType, int iTime, char[] sReason);
