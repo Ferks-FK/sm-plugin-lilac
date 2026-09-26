@@ -103,6 +103,11 @@
  * ~0.6s of angle history that can still span the forced period. */
 #define CAMERA_FORCED_GRACE_SECS  1.0
 
+/* L4D2 infected are placed by the game while in ghost state and materialize
+ * or get teleported facing a survivor, which looks like an aimlock. Grace
+ * covers the angle history that still spans the ghost period. */
+#define GHOST_GRACE_SECS  2.0
+
 #define INFECTED_DMG_BAN_MIN 3
 #define SURVIVOR_DMG_BAN_MIN 3
 
@@ -250,6 +255,7 @@ int playerinfo_aimlock[MAXPLAYERS + 1];
 float playerinfo_time_bumpercart[MAXPLAYERS + 1];
 float playerinfo_time_teleported[MAXPLAYERS + 1];
 float playerinfo_time_camera_forced[MAXPLAYERS + 1];
+float playerinfo_time_ghost[MAXPLAYERS + 1];
 float playerinfo_time_aimlock[MAXPLAYERS + 1];
 float playerinfo_time_process_aimlock[MAXPLAYERS + 1];
 float playerinfo_angles[MAXPLAYERS + 1][CMD_LENGTH][3];

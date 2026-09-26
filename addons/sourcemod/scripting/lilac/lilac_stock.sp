@@ -104,6 +104,7 @@ void lilac_reset_client(int client)
     playerinfo_time_bumpercart[client] = 0.0;
     playerinfo_time_teleported[client] = 0.0;
     playerinfo_time_camera_forced[client] = 0.0;
+    playerinfo_time_ghost[client] = 0.0;
     playerinfo_time_aimlock[client] = 0.0;
     playerinfo_time_process_aimlock[client] = 0.0;
     Format(playerinfo_detected[client], sizeof(playerinfo_detected[]), "");
@@ -618,6 +619,14 @@ bool is_player_valid(int client)
 bool lilac_camera_forced_external(int client)
 {
 	return GetEntPropFloat(client, Prop_Send, "m_TimeForceExternalView") > GetGameTime();
+}
+
+/* True while an L4D2 infected is in ghost state (m_isGhost). */
+bool lilac_player_is_ghost(int client)
+{
+	return g_bGame == Engine_Left4Dead2
+		&& GetClientTeam(client) == 3
+		&& GetEntProp(client, Prop_Send, "m_isGhost") != 0;
 }
 
 void lilac_save_player_details(int client, const char[] details)

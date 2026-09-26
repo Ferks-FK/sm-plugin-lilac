@@ -38,6 +38,12 @@ static bool aimlock_skip_player(int client)
 	if (GetGameTime() - playerinfo_time_camera_forced[client] < CAMERA_FORCED_GRACE_SECS) /* Forced external view (emote/dance/etc). */
 		return true;
 
+	if (lilac_player_is_ghost(client))
+		playerinfo_time_ghost[client] = GetGameTime();
+
+	if (GetGameTime() - playerinfo_time_ghost[client] < GHOST_GRACE_SECS) /* Ghost spawn/teleport faces a survivor. */
+		return true;
+
 	/* Lightweight mode is enabled, don't process players who aren't in que. */
 	if (icvar[CVAR_AIMLOCK_LIGHT] == 1 && lilac_is_player_in_aimlock_que(client) == false)
 		return true;
