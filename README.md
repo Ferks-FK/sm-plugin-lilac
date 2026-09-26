@@ -1,27 +1,36 @@
 # Little Anti-Cheat
 
-Little Anti-Cheat is a free and open source anti-cheat for source games, and runs on SourceMod.\
-It was originally developed for some secret servers I had back in the day.\
-But, as I quit cheating and quit having servers, I decided to release this project to help the community out.\
+Little Anti-Cheat (Lilac) is a free and open source anti-cheat for Source games, and runs on SourceMod.\
+It was originally developed by J_Tanzanite, and this repository is a maintained fork of the [SRCDSLAB fork](https://github.com/srcdslab/sm-plugin-lilac), with extra focus on Left 4 Dead 2 servers.\
 This Anti-Cheat is by no means perfect, and it is bypassable to some extent, but it should still be helpful in dealing with cheaters :)
+
+Current version: **1.8.4** (see [`updatefile.txt`](updatefile.txt) for the latest release notes).
 
 ### Current Cheat Detections:
  - Angle-Cheats (Basic Anti-Aims and Duckspeed).
  - Chat-Clear (When cheaters clear the chat).
- - Basic Invalid ConVar Detector (Checks if clients have sv_cheats turned on and such).
- - BunnyHop (Bhop).
- - Basic Projectile and Hitscan Aimbot.
+ - Basic Invalid ConVar Detector (Checks if clients have sv_cheats turned on and such, with support for exact, range, minimum and maximum values).
+ - BunnyHop (Bhop), with Low/Medium/High/Custom presets that adapt to the server tickrate.
+ - Basic Projectile and Hitscan Aimbot (including Autoshoot).
  - Basic Aimlock.
+ - Speedhack (pauses itself when the server is lagging, see the FAQ).
+ - NoLerp.
  - Newlines in names.
+ - [L4D2] Infected damage exploit.
+ - [L4D2] Survivor burst-damage exploit against the Tank.
 
 ### Misc features:
  - Angle-Cheats Patch (Patches Angle-Cheats from working).
  - Max Interp Kicker (Kicks players for attempting to exploit interp (cl_interp 0.5)).
- - Max Ping Kicker (Kicks players for having too high ping (Disabled by default)).
+ - Max Ping Kicker (Bans players for having too high ping for 3 minutes, and/or moves them to spectators with a warning (Both disabled by default)).
  - Backtrack Patch (Patches backtrack cheats (Disabled by default)).
- - Macro detection.
+ - Macro detection (Disabled by default).
  - Invalid name detection.
  - Invalid characters in chat patch (+ chat clear exploit fix).
+ - Network veto: Aimbot, Aimlock and Speedhack detections are ignored while the player's ping, jitter, packet loss or choke make timing-based analysis unreliable.
+ - Tickbase correction (players with a tickbase behind the server are clamped, players ahead of it are only logged).
+ - Ghost-state protection (L4D2): infected players are not checked for Aimlock while they are in ghost state, as spawning/teleporting there faces a survivor and looks like an aimlock.
+ - Detection warnings to admins in chat, translated to the language of each player.
 
 ### Supported Games:
  - [CS:S] Counter-Strike:Source
@@ -31,6 +40,51 @@ This Anti-Cheat is by no means perfect, and it is bypassable to some extent, but
 
 ### Untested, but should work in:
  - [HL2:DM] Half-Life 2:DeathMatch
+
+TF2 (use [StAC](https://github.com/sapphonie/StAC-tf2) instead) and CS:GO are no longer supported.
+
+## Installation
+1. Download the latest `lilac.smx` from the [releases](https://github.com/Ferks-FK/sm-plugin-lilac/releases) page (or build it yourself, see below) and place it in `addons/sourcemod/plugins/`.
+2. Copy the `addons/sourcemod/translations` folder to your server.
+3. Restart the server or the map. The config file is created at `cfg/sourcemod/lilac_config.cfg`, where every `lilac_*` ConVar is documented.
+
+The plugin is built with the SourceMod 1.12 compiler by the CI, so SourceMod 1.12 or newer is recommended.
+
+### Building
+Compile `addons/sourcemod/scripting/lilac.sp` with `spcomp`. All modules in `addons/sourcemod/scripting/lilac/` are included by that single file.\
+The GitHub Actions workflow (`.github/workflows/ci.yml`) does this on every push.
+
+### Updating
+Set `lilac_auto_update 1` to let the Updater plugin keep Lilac up to date from this fork. `updatefile.txt` is kept in sync with the version by the CI.
+
+## Configuration
+All settings are ConVars. The ones you are most likely to change:
+
+| ConVar | Default | Description |
+| --- | --- | --- |
+| `lilac_enable` | `1` | Enable Lilac. |
+| `lilac_ban` | `1` | Ban cheaters. Set to `0` to test Lilac before fully trusting it with bans. |
+| `lilac_ban_length` | `0` | Ban length in minutes (`0` = forever). |
+| `lilac_bhop` | `5` | `0` = disabled, `3` = custom (unlocks `lilac_bhop_set`), `4` = low, `5` = medium, `6` = high. Negative values are log-only. |
+| `lilac_aimbot` | `5` | `0` = disabled, `1` = log only, `5` or more = ban on n'th detection. |
+| `lilac_aimlock` | `10` | `0` = disabled, `1` = log only, `5` or more = ban on n'th detection. |
+| `lilac_speedhack` | `3` | `0` = disabled, `1` = log only, `3` or more = ban on n'th detection. |
+| `lilac_infected_damage` | `3` | L4D2 only. `0` = disabled, `1` = log only, `3` or more = ban on n'th detection. |
+| `lilac_survivor_damage` | `3` | L4D2 only. `0` = disabled, `1` = log only, `3` or more = ban on n'th detection. |
+| `lilac_convar` | `1` | `-1` = log only, `0` = disabled, `1` = kick, `2` = ban. |
+| `lilac_network_veto` | `1` | Ignore timing-based detections for players with a bad connection. |
+| `lilac_macro` | `0` | `-1` = log only, `0` = disabled, `1` = enabled. |
+| `lilac_database` | *(empty)* | Database name to log detections to (MySQL and SQLite supported). |
+| `lilac_autorecorder` | `0` | Print the MatchID into logs via AutoRecorder, if it is installed. |
+
+Each ban threshold has a minimum (5 for Aimbot and Aimlock, 3 for Speedhack, Infected damage and Survivor damage), and `1` is always log-only.
+
+### Console commands
+ - `lilac_set_ban_length` - Sets custom ban lengths for specific cheats.
+ - `lilac_get_bans_length` - Shows the current ban lengths for all cheat types.
+ - `lilac_ban_status` - Prints the banning status (which ban backend is being used).
+ - `lilac_bhop_set` - Sets custom Bhop settings (needs `lilac_bhop 3`).
+ - `lilac_date_list` - Lists the date formatting options for `lilac_log_date`.
 
 ## FAQ
 **Q: What is Autoshoot?**\
@@ -60,12 +114,21 @@ Note: Lilac currently does not check for yaw, so some desyncs are still possible
 A: No.\
 Macros are just when a player is using a script to input buttons for them (AutoHotKey for instance), or by using scroll to spam some input.\
 This is why Macro detections can only ban for 15 to 60 minutes, and no more.\
-Macro detections are by default disabled, because most servers don't care about this.
+Macro detections are by default disabled, because most servers don't care about this, and because they can produce false positives. If you enable them, `lilac_macro -1` (log only) is recommended, and treat the logs as a hint, not as proof.
 
 **Q: Does Lilac ban for high ping?**\
 A: Not quite.\
 The optional high ping kicker (which is disabled by default) in Lilac bans players for 3 minutes, after that, they can reconnect.\
 The reason for this is simple, if you only kicked high ping players, they could instantly reconnect.
+
+**Q: Why does Lilac ignore some detections?**\
+A: To avoid false positives, some detections are ignored when the player has a bad connection (`lilac_network_veto`, `lilac_loss_fix`), was just teleported or spawned, or is a ghost in L4D2.\
+The Speedhack check also pauses itself while the server's own tick rate is abnormal (server lag), which is logged as `speedhack detection paused`.\
+Also, the first detection of some modules (like Aimbot and Aimlock) is not logged, to avoid flagging one-off events.
+
+**Q: A detection is banning legitimate players, what can I do?**\
+A: Set that module to log-only (`1`, or a negative value for Bhop, Macro, etc.) and check the log and the demo before banning.\
+If you think there is a bug, please [open an issue](https://github.com/Ferks-FK/sm-plugin-lilac/issues) with the log lines attached.
 
 ## Non-Steam versions / CS:S v34 / CS:S v91 / ETC...
 Non-Steam versions (IE: Cracks) **ARE NOT SUPPORTED!**\
@@ -82,7 +145,8 @@ You can fix this by updating these ConVars: `lilac_angles 0` and `lilac_angles_p
 These **HAVE** to be disabled.
 
 ### Credits / Special Thanks to:
- - J_Tanzanite... Yeah I'm crediting myself for writing this AC...
+ - J_Tanzanite, for writing the original Little Anti-Cheat.
+ - The [SRCDSLAB](https://github.com/srcdslab/sm-plugin-lilac) contributors, whose fork this repository is based on.
  - Azalty, for being (rightly) stubborn regarding an issue and for contributing database logging.
  - foon, for fixing sourcebans++ not working (https://forums.alliedmods.net/showthread.php?p=2689297#post2689297).
  - Bottiger, for fixing this plugin not working in CS:GO and general criticisms.
@@ -92,6 +156,7 @@ These **HAVE** to be disabled.
 
 ### Current languages supported:
  - Simplified Chinese (by [RoyZ](https://github.com/RoyZ-CSGO) ^-^, and apples194)
+ - Traditional Chinese.
  - Dutch (by snowy UwU OwO EwE).
  - Danish (by kS the Man / ksgoescoding c:).
  - Norwegian (by me, the translations could be better).
@@ -120,6 +185,9 @@ Just understandable to those who don't speak English too well.
 ### Optional:
  - Sourcebans++
  - MaterialAdmin
+ - SourceBans (old)
+ - SourceIRC
+ - [AutoRecorder](https://github.com/Ferks-FK/sm-plugins/tree/development/autorecorder)
  - Updater
 
 <details>
