@@ -121,6 +121,20 @@ A: Not quite.\
 The optional high ping kicker (which is disabled by default) in Lilac bans players for 3 minutes, after that, they can reconnect.\
 The reason for this is simple, if you only kicked high ping players, they could instantly reconnect.
 
+**Q: What are the Infected damage and Survivor damage exploits? (L4D2 only)**\
+A: Some cheats let a player hit much faster than the game normally allows, dealing a huge amount of damage in a split second.\
+These two modules watch for that:
+
+ - **Infected damage** watches special infected (Smoker, Hunter, Spitter, Jockey, Charger and Tank) attacking survivors.
+ - **Survivor damage** watches survivors shooting or hitting the Tank.
+
+If a player deals more damage in one second than is possible in a normal game, it counts as a detection.\
+The first detection is not logged, and detections are forgotten after 10 minutes, so a single strange moment (like lag) won't get anyone banned.
+
+You can control them with `lilac_infected_damage` and `lilac_survivor_damage`: `0` = disabled, `1` = log only, `3` or more = ban on that detection.
+
+If a legitimate player gets flagged, set the module to log-only and [open an issue](https://github.com/Ferks-FK/sm-plugin-lilac/issues) with the log line attached. This can happen on servers with plugins that change damage or weapon speed.
+
 **Q: Why does Lilac ignore some detections?**\
 A: To avoid false positives, some detections are ignored when the player has a bad connection (`lilac_network_veto`, `lilac_loss_fix`), was just teleported or spawned, or is a ghost in L4D2.\
 The Speedhack check also pauses itself while the server's own tick rate is abnormal (server lag), which is logged as `speedhack detection paused`.\
