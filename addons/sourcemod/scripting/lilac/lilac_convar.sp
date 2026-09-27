@@ -188,25 +188,32 @@ public void query_reply(QueryCookie cookie, int client, ConVarQueryResult result
         bool is_valid;
 
         if (convar_rules[i].is_float) {
+            /* expected_value/max_value are tagged any: retag them as float
+             * explicitly, otherwise spcomp 1.13 does not compare them as
+             * floats (see srcdslab/sm-plugin-lilac#41). */
+            float expected = view_as<float>(convar_rules[i].expected_value);
+            float maxval = view_as<float>(convar_rules[i].max_value);
             float fval = StringToFloat(normalizedValue);
             if (convar_rules[i].is_range)
-                is_valid = (fval >= convar_rules[i].expected_value && fval <= convar_rules[i].max_value);
+                is_valid = (fval >= expected && fval <= maxval);
             else if (convar_rules[i].is_minimum)
-                is_valid = (fval >= convar_rules[i].expected_value);
+                is_valid = (fval >= expected);
             else if (convar_rules[i].is_maximum)
-                is_valid = (fval < convar_rules[i].expected_value);
+                is_valid = (fval < expected);
             else
-                is_valid = (fval == convar_rules[i].expected_value);
+                is_valid = (fval == expected);
         } else {
+            int expected = convar_rules[i].expected_value;
+            int maxval = view_as<int>(convar_rules[i].max_value);
             int ival = StringToInt(normalizedValue);
             if (convar_rules[i].is_range)
-                is_valid = (ival >= convar_rules[i].expected_value && ival <= view_as<int>(convar_rules[i].max_value));
+                is_valid = (ival >= expected && ival <= maxval);
             else if (convar_rules[i].is_minimum)
-                is_valid = (ival >= convar_rules[i].expected_value);
+                is_valid = (ival >= expected);
             else if (convar_rules[i].is_maximum)
-                is_valid = (ival < convar_rules[i].expected_value);
+                is_valid = (ival < expected);
             else
-                is_valid = (ival == convar_rules[i].expected_value);
+                is_valid = (ival == expected);
         }
 
         if (is_valid)
