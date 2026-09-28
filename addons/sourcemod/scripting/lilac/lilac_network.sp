@@ -140,6 +140,13 @@ void lilac_network_format(int client, char[] buffer, int maxlen)
 		lilac_network_get_invalid_count(client));
 }
 
+/* High choke that a real connection can produce. Values above
+ * NET_CHOKE_VALID_MAX are corrupted data, not a bad connection. */
+static bool lilac_network_choke_bad(float choke)
+{
+	return choke >= NET_MAX_CHOKE && choke <= NET_CHOKE_VALID_MAX;
+}
+
 /* True when the connection makes timing-based analysis unreliable. */
 bool lilac_network_vetoed(int client)
 {
@@ -165,8 +172,8 @@ bool lilac_network_vetoed(int client)
 		|| GetClientAvgLoss(client, NetFlow_Outgoing) >= NET_MAX_LOSS)
 		return true;
 
-	if (GetClientAvgChoke(client, NetFlow_Incoming) >= NET_MAX_CHOKE
-		|| GetClientAvgChoke(client, NetFlow_Outgoing) >= NET_MAX_CHOKE)
+	if (lilac_network_choke_bad(GetClientAvgChoke(client, NetFlow_Incoming))
+		|| lilac_network_choke_bad(GetClientAvgChoke(client, NetFlow_Outgoing)))
 		return true;
 
 	return false;

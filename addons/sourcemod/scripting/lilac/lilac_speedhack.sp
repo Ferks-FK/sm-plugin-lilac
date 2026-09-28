@@ -42,8 +42,15 @@ void lilac_speedhack_reset_client(int client)
 
 void lilac_speedhack_update_choke(int client)
 {
+    float choke = GetClientAvgChoke(client, NetFlow_Incoming);
+
+    /* Impossible values are corrupted accounting (tickbase manipulation),
+     * not a bad connection, so they must not block the ban gate. */
+    if (choke > NET_CHOKE_VALID_MAX)
+        choke = 0.0;
+
     player_avg_choke[client] =
-        (0.25 * GetClientAvgChoke(client, NetFlow_Incoming)) +
+        (0.25 * choke) +
         (0.75 * player_avg_choke[client]);
 }
 
