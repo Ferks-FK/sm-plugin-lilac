@@ -4,7 +4,7 @@ Little Anti-Cheat (Lilac) is a free and open source anti-cheat for Source games,
 It was originally developed by J_Tanzanite, and this repository is a maintained fork of the [SRCDSLAB fork](https://github.com/srcdslab/sm-plugin-lilac), with extra focus on Left 4 Dead 2 servers.\
 This Anti-Cheat is by no means perfect, and it is bypassable to some extent, but it should still be helpful in dealing with cheaters :)
 
-Current version: **1.8.4** (see [`updatefile.txt`](updatefile.txt) for the latest release notes).
+Current version: **1.8.5** (see [`updatefile.txt`](updatefile.txt) for the latest release notes).
 
 ### Current Cheat Detections:
  - Angle-Cheats (Basic Anti-Aims and Duckspeed).

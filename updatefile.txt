@@ -4,7 +4,7 @@
 	{
 		"Version"
 		{
-			"Latest"	"1.8.4"
+			"Latest"	"1.8.5"
 		}
 
 		"Notes" "Add new Survivor Damage burst-exploit detection module (L4D2)."
@@ -15,6 +15,15 @@
 		"Notes" "Fix SQL escaping in database logging."
 		"Notes" "Update Speedhack ban minimum to 3 detections."
 		"Notes" "Add MatchID display support in detections (AutoRecorder integration)."
+		"Notes" "Add optional Discord webhook reports for bans, kicks and suspected detections (needs the REST in Pawn extension, see the lilac_discord ConVars)."
+		"Notes" "Add the lilac_discord_test command to check the Discord webhook."
+		"Notes" "Skip Aimlock checks for infected players in ghost state, where spawning and teleporting face a survivor and caused false positives."
+		"Notes" "Network veto: choke above 100% (corrupted by tickbase manipulation) no longer vetoes Aimbot, Aimlock and Speedhack, and the choke veto now only applies from 90%."
+		"Notes" "Speedhack: corrupted choke values no longer block the ban."
+		"Notes" "ConVar module: fix float comparison on SourceMod 1.13 that could ban legitimate players (issue #41)."
+		"Notes" "ConVar module: do not punish players for ConVars that have no rule."
+		"Notes" "Survivor Damage Module: raise the minigun threshold."
+		"Notes" "Add ping message translations for all languages."
 	}
 
 	"Files"
