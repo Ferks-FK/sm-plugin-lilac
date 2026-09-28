@@ -145,9 +145,15 @@
  * rate versus cl_cmdrate/cl_updaterate), not a direct measure of link
  * instability the way loss/jitter/ping are — a client that never tuned these
  * for a high-tickrate server can sit here permanently without anything
- * actually being wrong with its connection. Kept looser than the others so
- * it doesn't veto a confident detection on its own. */
-#define NET_MAX_CHOKE    0.10
+ * actually being wrong with its connection. It is also under the client's
+ * control, so a low threshold would let a cheater dodge detections by
+ * lowering cl_cmdrate. Only extreme values veto. */
+#define NET_MAX_CHOKE    0.90
+/* Choke is a fraction from 0 to 1. A higher value is impossible on a real
+ * connection: tickbase manipulation corrupts the netchan accounting and
+ * inflates it to thousands of percent. Such a value is not evidence of a bad
+ * connection, so it must not veto detections (the cheat would blind them). */
+#define NET_CHOKE_VALID_MAX  1.0
 
 #define STRFLAG_NEWLINE          (1 << 0) /* Carriage return or Newline. */
 #define STRFLAG_WIDE_CHAR_SPAM   (1 << 1) /* Lots of wide character spam. */
