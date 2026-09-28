@@ -202,6 +202,8 @@ static void lilac_detected_aimlock(int client)
 	if (++playerinfo_aimlock[client] < 2)
 		return;
 
+	lilac_discord_report(client, CHEAT_AIMLOCK, DISCORD_SUSPECT);
+
 	if (icvar[CVAR_CHEAT_WARN])
 		lilac_warn_admins(client, CHEAT_AIMLOCK, playerinfo_aimlock[client]);
 

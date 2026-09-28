@@ -30,6 +30,7 @@
 
 #undef REQUIRE_PLUGIN /* ... */
 #undef REQUIRE_EXTENSIONS
+#tryinclude <ripext> /* Optional, only used by the Discord webhook. */
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
@@ -46,6 +47,7 @@
 #include "lilac/lilac_config.sp"
 #include "lilac/lilac_convar.sp"
 #include "lilac/lilac_database.sp"
+#include "lilac/lilac_discord.sp"
 #include "lilac/lilac_lerp.sp"
 #include "lilac/lilac_macro.sp"
 #include "lilac/lilac_network.sp"
@@ -147,6 +149,8 @@ public void OnPluginStart()
     CreateTimer(0.1, timer_check_aimlock, _, TIMER_REPEAT);
     CreateTimer(0.1, timer_sample_network, _, TIMER_REPEAT);
     CreateTimer(60.0 * 5.0, timer_decrement_macro, _, TIMER_REPEAT);
+
+    lilac_discord_init();
 
     /* Just a fallback until OnGameFrame's first tick confirms the real,
      * settled tickrate below — the server may not have finished applying

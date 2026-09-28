@@ -207,6 +207,8 @@ static void lilac_survivor_damage_flag(int attacker, int victim, const char[] we
 	if (surv_dmg_detections[attacker] < 2)
 		return;
 
+	lilac_discord_report(attacker, CHEAT_SURVIVOR_DMG, DISCORD_SUSPECT);
+
 	if (icvar[CVAR_CHEAT_WARN])
 		lilac_warn_admins(attacker, CHEAT_SURVIVOR_DMG, surv_dmg_detections[attacker]);
 

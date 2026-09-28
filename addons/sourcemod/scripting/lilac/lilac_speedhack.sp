@@ -163,6 +163,8 @@ static void lilac_detected_speedhack(int client, int cmdcount, int baseline)
     if (speedhack_detection[client] < 2)
         return;
 
+    lilac_discord_report(client, CHEAT_SPEEDHACK, DISCORD_SUSPECT);
+
     if (icvar[CVAR_CHEAT_WARN])
         lilac_warn_admins(client, CHEAT_SPEEDHACK, speedhack_detection[client]);
 

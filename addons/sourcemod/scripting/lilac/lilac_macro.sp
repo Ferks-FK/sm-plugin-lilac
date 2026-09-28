@@ -187,8 +187,10 @@ static void lilac_detected_macro(int client, int type)
 	if (icvar[CVAR_MACRO] == -1)
 		return;
 
-	if (icvar[CVAR_MACRO_DEAL_METHOD] == 0)
+	if (icvar[CVAR_MACRO_DEAL_METHOD] == 0) {
+		lilac_discord_report(client, CHEAT_MACRO, DISCORD_KICKED);
 		KickClient(client, "[Lilac] %T", "kick_macro", client, string);
+	}
 	else
 		lilac_ban_client(client, CHEAT_MACRO);
 }

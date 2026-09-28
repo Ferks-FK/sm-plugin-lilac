@@ -63,7 +63,17 @@
 #define CVAR_INFECTED_DMG          39
 #define CVAR_NET_VETO              40
 #define CVAR_SURVIVOR_DMG          41
-#define CVAR_MAX                   42
+#define CVAR_DISCORD               42
+#define CVAR_DISCORD_WEBHOOK       43
+#define CVAR_DISCORD_ROLE          44
+#define CVAR_DISCORD_ADDRESS       45
+#define CVAR_DISCORD_LOGO          46
+#define CVAR_MAX                   47
+
+/* What happened to the player, for Discord reports. */
+#define DISCORD_BANNED             0
+#define DISCORD_KICKED             1
+#define DISCORD_SUSPECT            2
 
 #define BHOP_INDEX_MIN     0
 #define BHOP_INDEX_JUMP    1
@@ -172,7 +182,7 @@
 #define PLUGIN_NAME      "[Lilac] Little Anti-Cheat"
 #define PLUGIN_AUTHOR    "J_Tanzanite, Ferks-FK"
 #define PLUGIN_DESC      "An opensource Anti-Cheat"
-#define PLUGIN_VERSION   "1.8.4"
+#define PLUGIN_VERSION   "1.8.5"
 #define PLUGIN_URL       "https://github.com/J-Tanzanite/Little-Anti-Cheat"
 
 /* Set to 0 to remove all shadow-metric code from the build. */

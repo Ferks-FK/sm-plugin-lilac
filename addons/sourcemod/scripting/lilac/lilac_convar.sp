@@ -256,8 +256,10 @@ public void query_reply(QueryCookie cookie, int client, ConVarQueryResult result
 
     playerinfo_banned_flags[client][CHEAT_CONVAR] = true;
 
-    if (icvar[CVAR_CONVAR] == 1)
+    if (icvar[CVAR_CONVAR] == 1) {
+        lilac_discord_report(client, CHEAT_CONVAR, DISCORD_KICKED);
         KickClient(client, "[Lilac] %T", "ban_convar", client, sDetails);
+    }
     else if (icvar[CVAR_CONVAR] == 2)
         lilac_ban_client(client, CHEAT_CONVAR);
 }
