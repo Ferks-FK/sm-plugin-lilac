@@ -34,6 +34,7 @@ addons/sourcemod/scripting/
     ├── lilac_globals.sp       # Global definitions and constants
     ├── lilac_config.sp        # Configuration management  
     ├── lilac_database.sp      # Database logging (async SQL)
+    ├── lilac_discord.sp       # Optional Discord webhook reports (needs ripext)
     ├── lilac_aimbot.sp        # Aimbot detection algorithms
     ├── lilac_aimlock.sp       # Aimlock detection
     ├── lilac_angles.sp        # Invalid angle detection

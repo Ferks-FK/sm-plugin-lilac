@@ -31,6 +31,7 @@ Current version: **1.8.4** (see [`updatefile.txt`](updatefile.txt) for the lates
  - Tickbase correction (players with a tickbase behind the server are clamped, players ahead of it are only logged).
  - Ghost-state protection (L4D2): infected players are not checked for Aimlock while they are in ghost state, as spawning/teleporting there faces a survivor and looks like an aimlock.
  - Detection warnings to admins in chat, translated to the language of each player.
+ - Discord webhook reports for bans, kicks and suspected detections (Optional, disabled by default, needs the REST in Pawn extension).
 
 ### Supported Games:
  - [CS:S] Counter-Strike:Source
@@ -76,6 +77,8 @@ All settings are ConVars. The ones you are most likely to change:
 | `lilac_macro` | `0` | `-1` = log only, `0` = disabled, `1` = enabled. |
 | `lilac_database` | *(empty)* | Database name to log detections to (MySQL and SQLite supported). |
 | `lilac_autorecorder` | `0` | Print the MatchID into logs via AutoRecorder, if it is installed. |
+| `lilac_discord` | `0` | Discord webhook reports. `0` = disabled, `1` = bans and kicks, `2` = also suspected detections. |
+| `lilac_discord_webhook` | *(empty)* | The Discord webhook URL. Keep it private. |
 
 Each ban threshold has a minimum (5 for Aimbot and Aimlock, 3 for Speedhack, Infected damage and Survivor damage), and `1` is always log-only.
 
@@ -85,6 +88,19 @@ Each ban threshold has a minimum (5 for Aimbot and Aimlock, 3 for Speedhack, Inf
  - `lilac_ban_status` - Prints the banning status (which ban backend is being used).
  - `lilac_bhop_set` - Sets custom Bhop settings (needs `lilac_bhop 3`).
  - `lilac_date_list` - Lists the date formatting options for `lilac_log_date`.
+ - `lilac_discord_test [ban|kick|suspect]` - Sends a sample report to the Discord webhook, to check it works.
+
+### Discord reports
+Lilac can post an embed to a Discord channel for each ban, kick and (optionally) suspected detection, with the player, SteamID64, detection, evidence, punishment, map, server address and MatchID.
+
+1. Install the [REST in Pawn](https://github.com/ErikMinekus/sm-ripext) extension on the server.
+2. Create a webhook in your Discord channel (Channel settings, Integrations, Webhooks) and copy its URL.
+3. Set `lilac_discord_webhook` to that URL and `lilac_discord` to `1` or `2`.
+4. Run `lilac_discord_test` in the server console to check that it works.
+
+Extra ConVars: `lilac_discord_role` (a role ID to mention when a player is banned), `lilac_discord_address` (the `ip:port` to show, if it can't be detected) and `lilac_discord_logo` (an image URL for the icon and thumbnail).\
+The player's IP is never sent. Reports are queued and sent slowly to respect Discord's rate limit, and suspected detections are limited to one per player and cheat every minute.\
+Without the extension, or without a URL, this feature does nothing.
 
 ## FAQ
 **Q: What is Autoshoot?**\
@@ -167,6 +183,7 @@ These **HAVE** to be disabled.
  - MAGNAT2645 for suggesting a cleaner method of handling convar changes.
  - Larry/LarryBrains for informing me of false Angle-Cheat detections in L4D2.
  - [VintagePC](https://github.com/vintagepc) for SourceIRC support and basepath fix.
+ - Erik Minekus, for the [REST in Pawn](https://github.com/ErikMinekus/sm-ripext) extension used by the Discord reports (its include files are bundled).
 
 ### Current languages supported:
  - Simplified Chinese (by [RoyZ](https://github.com/RoyZ-CSGO) ^-^, and apples194)
@@ -202,6 +219,7 @@ Just understandable to those who don't speak English too well.
  - SourceBans (old)
  - SourceIRC
  - [AutoRecorder](https://github.com/Ferks-FK/sm-plugins/tree/development/autorecorder)
+ - REST in Pawn (for Discord reports)
  - Updater
 
 <details>

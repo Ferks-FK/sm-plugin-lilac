@@ -42,6 +42,7 @@
 		"Source"	"Path_SM/scripting/lilac/lilac_config.sp"
 		"Source"	"Path_SM/scripting/lilac/lilac_convar.sp"
 		"Source"	"Path_SM/scripting/lilac/lilac_database.sp"
+		"Source"	"Path_SM/scripting/lilac/lilac_discord.sp"
 		"Source"	"Path_SM/scripting/lilac/lilac_globals.sp"
 		"Source"	"Path_SM/scripting/lilac/lilac_infected_damage.sp"
 		"Source"	"Path_SM/scripting/lilac/lilac_lerp.sp"

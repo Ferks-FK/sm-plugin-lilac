@@ -161,6 +161,8 @@ static void lilac_infected_damage_flag(int attacker, int victim, int zclass, int
 	if (inf_dmg_detections[attacker] < 2)
 		return;
 
+	lilac_discord_report(attacker, CHEAT_INFECTED_DMG, DISCORD_SUSPECT);
+
 	if (icvar[CVAR_CHEAT_WARN])
 		lilac_warn_admins(attacker, CHEAT_INFECTED_DMG, inf_dmg_detections[attacker]);
 

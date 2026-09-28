@@ -97,6 +97,7 @@ void lilac_reset_client(int client)
     lilac_convar_reset_client(client);
     lilac_lerp_reset_client(client);
     lilac_network_reset_client(client);
+    lilac_discord_reset_client(client);
 
     playerinfo_index[client] = 0;
     playerinfo_aimlock_sus[client] = 0;
@@ -396,6 +397,7 @@ void lilac_ban_client(int client, int cheat)
 	}
 
 	lilac_forward_client_ban(client, cheat);
+	lilac_discord_report(client, cheat, DISCORD_BANNED);
 
 	switch (lilac_get_ban_backend()) {
 	case BAN_BACKEND_MATERIALADMIN: {

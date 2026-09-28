@@ -501,6 +501,8 @@ static void lilac_detected_aimbot(int client, float delta, float td, int flags, 
     if (++aimbot_detection[client] < 2)
         return;
 
+    lilac_discord_report(client, CHEAT_AIMBOT, DISCORD_SUSPECT);
+
     if (icvar[CVAR_CHEAT_WARN])
         lilac_warn_admins(client, CHEAT_AIMBOT, aimbot_detection[client]);
 

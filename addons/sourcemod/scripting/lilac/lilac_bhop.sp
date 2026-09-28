@@ -146,6 +146,9 @@ static void lilac_detected_bhop(int client, bool force_log, bool banning)
 	if (detections[client] < 2 && !force_log && !reached_total)
 		return;
 
+	if (!banning && !reached_total)
+		lilac_discord_report(client, CHEAT_BHOP, DISCORD_SUSPECT);
+
 	if (icvar[CVAR_CHEAT_WARN]
 		&& !banning
 		&& !reached_total)

@@ -38,6 +38,21 @@ void lilac_config_setup()
     hcvar[CVAR_SOURCEIRC] = new Convar("lilac_sourceirc", "1",
         "Enable reflecting log messages to SourceIRC channels flagged with 'lilac', if SourceIRC is available.",
         FCVAR_PROTECTED, true, 0.0, true, 1.0);
+    hcvar[CVAR_DISCORD] = new Convar("lilac_discord", "0",
+        "Send reports to a Discord webhook (needs the REST in Pawn extension and lilac_discord_webhook).\n0 = Disabled.\n1 = Bans and kicks.\n2 = Bans, kicks and suspected detections.",
+        FCVAR_PROTECTED, true, 0.0, true, 2.0);
+    hcvar[CVAR_DISCORD_WEBHOOK] = new Convar("lilac_discord_webhook", "",
+        "Discord webhook URL. Keep it private, anyone with it can post in your channel.",
+        FCVAR_PROTECTED);
+    hcvar[CVAR_DISCORD_ROLE] = new Convar("lilac_discord_role", "",
+        "ID of a Discord role to mention when a player is banned (empty = no mention).",
+        FCVAR_PROTECTED);
+    hcvar[CVAR_DISCORD_ADDRESS] = new Convar("lilac_discord_address", "",
+        "Server address (ip:port) shown in Discord reports (empty = detect it from hostip and hostport).",
+        FCVAR_PROTECTED);
+    hcvar[CVAR_DISCORD_LOGO] = new Convar("lilac_discord_logo", "",
+        "Image URL used as icon and thumbnail in Discord reports (empty = none).",
+        FCVAR_PROTECTED);
     hcvar[CVAR_LOG] = new Convar("lilac_log", "1",
         "Enable cheat logging.",
         FCVAR_PROTECTED, true, 0.0, true, 1.0);
@@ -195,6 +210,7 @@ void lilac_config_setup()
     RegServerCmd("lilac_get_bans_length", lilac_get_bans_length, "Shows current ban lengths for all cheat types.", 0);
     RegServerCmd("lilac_ban_status", lilac_ban_status, "Prints banning status to server console.", 0);
     RegServerCmd("lilac_bhop_set", lilac_bhop_set, "Sets Custom Bhop settings", 0);
+    RegServerCmd("lilac_discord_test", lilac_discord_test, "Sends a test report to the Discord webhook. Usage: lilac_discord_test [ban|kick|suspect]", 0);
 
     /* Legacy check, execute old config location.
     * Uses github.com/kidfearless/Auto-Exec-Config-Class */
@@ -766,6 +782,13 @@ public void cvar_change(ConVar convar, const char[] oldValue, const char[] newVa
     }
     else if (convar == hcvar[CVAR_SURVIVOR_DMG]) {
         icvar[CVAR_SURVIVOR_DMG] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_DISCORD]) {
+        icvar[CVAR_DISCORD] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_DISCORD_WEBHOOK]) {
+        /* A new URL may fix whatever made the last one fail. */
+        lilac_discord_reset();
     }
     else {
         convar.GetName(cvarname, sizeof(cvarname));
