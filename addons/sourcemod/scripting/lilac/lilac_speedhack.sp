@@ -31,6 +31,9 @@ static float player_last_vetoed[MAXPLAYERS + 1];
 static ConVar g_hMaxCmdrate = null;
 static bool g_bMaxCmdrateChecked = false;
 
+// Game time seen on the previous check, to detect the game being paused.
+static float g_flLastSpeedhackClock = -1.0;
+
 void lilac_speedhack_reset_client(int client)
 {
     speedhack_detection[client] = 0;
@@ -71,6 +74,17 @@ public Action timer_check_speedhack(Handle timer)
     }
 
     float now = GetGameTime();
+
+    /* Game time doesn't move while the game is paused, but players keep
+     * sending commands, which looks like a speedhack. Skip the check
+     * while paused. */
+    if (now == g_flLastSpeedhackClock) {
+        g_flLastSpeedhackClock = now;
+
+        return Plugin_Continue;
+    }
+
+    g_flLastSpeedhackClock = now;
 
     int baseline = tick_rate;
     if (!g_bMaxCmdrateChecked) {
