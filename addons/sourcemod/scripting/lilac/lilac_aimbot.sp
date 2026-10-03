@@ -19,12 +19,14 @@
 static int aimbot_detection[MAXPLAYERS + 1];
 static int aimbot_autoshoot[MAXPLAYERS + 1];
 static int aimbot_timertick[MAXPLAYERS + 1];
+static int aimbot_smooth_streak[MAXPLAYERS + 1];
 
 void lilac_aimbot_reset_client(int client)
 {
 	aimbot_detection[client] = 0;
 	aimbot_autoshoot[client] = 0;
 	aimbot_timertick[client] = 0;
+	aimbot_smooth_streak[client] = 0;
 }
 
 int lilac_aimbot_get_client_detections(int client)
@@ -378,6 +380,16 @@ public Action timer_check_aimbot(Handle timer, DataPack pack)
             && total_delta / float(total_analysis_ticks) > jitter_threshold
             && angle_delta(playerinfo_angles[client][shotindex], ideal) < 5.0)
             flag_jitter = true;
+
+        /* Smooth/Jitter alone aren't calibrated enough to ban on the first
+         * hit. Only count them once they repeat, same idea as Autoshoot. */
+        if (flag_smooth || flag_jitter) {
+            if (detected || ++aimbot_smooth_streak[client] > 1)
+                detected |= (flag_smooth ? AIMBOT_FLAG_SMOOTH : 0) | (flag_jitter ? AIMBOT_FLAG_JITTER : 0);
+        }
+        else {
+            aimbot_smooth_streak[client] = 0;
+        }
     }
 
     bool net_vetoed = lilac_network_vetoed(client);
