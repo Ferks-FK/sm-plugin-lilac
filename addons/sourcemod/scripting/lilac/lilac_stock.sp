@@ -623,6 +623,19 @@ bool lilac_camera_forced_external(int client)
 	return GetEntPropFloat(client, Prop_Send, "m_TimeForceExternalView") > GetGameTime();
 }
 
+/* Readable team name, for reports. */
+void lilac_team_name(int team, char[] buffer, int maxlen)
+{
+	if (team <= 0)
+		strcopy(buffer, maxlen, "None");
+	else if (team == 1)
+		strcopy(buffer, maxlen, "Spectator");
+	else if (g_bGame == Engine_Left4Dead2 || g_bGame == Engine_Left4Dead)
+		strcopy(buffer, maxlen, (team == 2) ? "Survivor" : "Infected");
+	else
+		FormatEx(buffer, maxlen, "Team %d", team);
+}
+
 /* True while an L4D2 infected is in ghost state (m_isGhost). */
 bool lilac_player_is_ghost(int client)
 {

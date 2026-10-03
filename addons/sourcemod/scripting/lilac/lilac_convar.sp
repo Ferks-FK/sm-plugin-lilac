@@ -144,6 +144,36 @@ public Action timer_query(Handle timer)
 	return Plugin_Continue;
 }
 
+/* What the rule accepts, for reports. */
+static void convar_expected_text(int rule, char[] buffer, int maxlen)
+{
+    if (convar_rules[rule].is_float) {
+        float expected = view_as<float>(convar_rules[rule].expected_value);
+        float maxval = view_as<float>(convar_rules[rule].max_value);
+
+        if (convar_rules[rule].is_range)
+            FormatEx(buffer, maxlen, "%.1f to %.1f", expected, maxval);
+        else if (convar_rules[rule].is_minimum)
+            FormatEx(buffer, maxlen, ">= %.1f", expected);
+        else if (convar_rules[rule].is_maximum)
+            FormatEx(buffer, maxlen, "< %.1f", expected);
+        else
+            FormatEx(buffer, maxlen, "%.1f", expected);
+    } else {
+        int expected = convar_rules[rule].expected_value;
+        int maxval = view_as<int>(convar_rules[rule].max_value);
+
+        if (convar_rules[rule].is_range)
+            FormatEx(buffer, maxlen, "%d to %d", expected, maxval);
+        else if (convar_rules[rule].is_minimum)
+            FormatEx(buffer, maxlen, ">= %d", expected);
+        else if (convar_rules[rule].is_maximum)
+            FormatEx(buffer, maxlen, "< %d", expected);
+        else
+            FormatEx(buffer, maxlen, "%d", expected);
+    }
+}
+
 public void query_reply(QueryCookie cookie, int client, ConVarQueryResult result, const char[] cvarName, const char[] cvarValue, any value)
 {
     /* ConVarQuery_NotFound is a valid response — cvar doesn't exist on this client.
@@ -170,6 +200,8 @@ public void query_reply(QueryCookie cookie, int client, ConVarQueryResult result
 
     /* Check against convar rules */
     bool rule_found = false;
+    char expected_text[48];
+    expected_text[0] = '\0';
 
     for (int i = 0; i < sizeof(convar_rules); i++) {
         if (!StrEqual(convar_rules[i].name, cvarName, false))
@@ -219,6 +251,8 @@ public void query_reply(QueryCookie cookie, int client, ConVarQueryResult result
         if (is_valid)
             return;
 
+        convar_expected_text(i, expected_text, sizeof(expected_text));
+
         break;
     }
 
@@ -234,6 +268,10 @@ public void query_reply(QueryCookie cookie, int client, ConVarQueryResult result
 
     lilac_save_player_details(client, sDetails);
     lilac_forward_client_cheat(client, CHEAT_CONVAR);
+
+    char sExtra[64];
+    FormatEx(sExtra, sizeof(sExtra), "Expected: %s", expected_text);
+    lilac_discord_set_extra(client, CHEAT_CONVAR, sExtra);
 
     if (icvar[CVAR_LOG]) {
         lilac_log_setup_client(client);

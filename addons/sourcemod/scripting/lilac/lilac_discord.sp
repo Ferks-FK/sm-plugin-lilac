@@ -55,6 +55,11 @@ static bool discord_disabled = false;     /* The webhook was refused, stop until
 static float discord_next_send = 0.0;
 static float discord_last_suspect[MAXPLAYERS + 1][CHEAT_MAX];
 
+/* Extra evidence lines a module adds for Discord only. Kept per cheat, so
+ * the lines of one cheat never show up on another's report. */
+static char discord_extra[MAXPLAYERS + 1][256];
+static int discord_extra_cheat[MAXPLAYERS + 1];
+
 void lilac_discord_init()
 {
 	discord_payloads = new ArrayList(ByteCountToCells(DISCORD_PAYLOAD_SIZE));
@@ -67,6 +72,15 @@ void lilac_discord_reset_client(int client)
 {
 	for (int i = 0; i < CHEAT_MAX; i++)
 		discord_last_suspect[client][i] = 0.0;
+
+	discord_extra[client][0] = '\0';
+	discord_extra_cheat[client] = -1;
+}
+
+void lilac_discord_set_extra(int client, int cheat, const char[] text)
+{
+	strcopy(discord_extra[client], sizeof(discord_extra[]), text);
+	discord_extra_cheat[client] = cheat;
 }
 
 void lilac_discord_reset()
@@ -181,8 +195,44 @@ static void discord_add_field(JSONArray fields, const char[] name, const char[] 
 	delete field;
 }
 
+static void discord_format_duration(float seconds, char[] buffer, int maxlen)
+{
+	int total = RoundToFloor(seconds);
+
+	if (total >= 3600)
+		FormatEx(buffer, maxlen, "%dh %02dm", total / 3600, (total % 3600) / 60);
+	else
+		FormatEx(buffer, maxlen, "%dm %02ds", total / 60, total % 60);
+}
+
+/* Short summary of the player's state, same data as the extra log line. */
+static void discord_client_context(int client, char[] buffer, int maxlen)
+{
+	char weapon[64], shown[64], team[16], connected[16];
+
+	GetClientWeapon(client, weapon, sizeof(weapon));
+	strcopy(shown, sizeof(shown), weapon);
+	ReplaceString(shown, sizeof(shown), "weapon_", "");
+
+	if (shown[0] == '\0')
+		strcopy(shown, sizeof(shown), "none");
+
+	lilac_team_name(GetClientTeam(client), team, sizeof(team));
+	discord_format_duration(GetClientTime(client), connected, sizeof(connected));
+
+	FormatEx(buffer, maxlen,
+		"Weapon: %s | Team: %s\nPing: %.0fms | Loss: %.1f%%/%.1f%% | Choke: %.1f%%/%.1f%%\nConnected: %s",
+		shown, team,
+		GetClientAvgLatency(client, NetFlow_Outgoing) * 1000.0,
+		GetClientAvgLoss(client, NetFlow_Incoming) * 100.0,
+		GetClientAvgLoss(client, NetFlow_Outgoing) * 100.0,
+		GetClientAvgChoke(client, NetFlow_Incoming) * 100.0,
+		GetClientAvgChoke(client, NetFlow_Outgoing) * 100.0,
+		connected);
+}
+
 /* Builds the embed from plain values. An empty steamid means it is unavailable. */
-static JSONObject discord_build_payload(const char[] name, const char[] steamid, const char[] cheat_name, const char[] details, int outcome)
+static JSONObject discord_build_payload(const char[] name, const char[] steamid, const char[] cheat_name, const char[] details, const char[] extra, const char[] context, int outcome)
 {
 	char safe_name[MAX_NAME_LENGTH * 3], map[128], matchid[64];
 	char server[128], address[64], logo[512], role[32];
@@ -213,10 +263,18 @@ static JSONObject discord_build_payload(const char[] name, const char[] steamid,
 	if (StrContains(logo, "http", false) != 0)
 		logo[0] = '\0';
 
-	/* The details Lilac logged for this player, never contain the IP. */
+	/* The details Lilac logged for this player (never the IP), one per line. */
 	strcopy(evidence, sizeof(evidence), details);
+	ReplaceString(evidence, sizeof(evidence), " | ", "\n");
+
 	if (evidence[0] == '\0')
 		strcopy(evidence, sizeof(evidence), "The detector reached its configured threshold.");
+
+	if (extra[0] != '\0') {
+		StrCat(evidence, sizeof(evidence), "\n");
+		StrCat(evidence, sizeof(evidence), extra);
+	}
+
 	ReplaceString(evidence, sizeof(evidence), "```", "'''");
 
 	int color = DISCORD_COLOR_SUSPECT;
@@ -258,6 +316,11 @@ static JSONObject discord_build_payload(const char[] name, const char[] steamid,
 
 	FormatEx(value, sizeof(value), "```text\n%s\n```", evidence);
 	discord_add_field(fields, "Evidence", value, true);
+
+	if (context[0] != '\0') {
+		FormatEx(value, sizeof(value), "```text\n%s\n```", context);
+		discord_add_field(fields, "Context", value, true);
+	}
 
 	discord_add_field(fields, "Punishment", punishment, true);
 
@@ -348,7 +411,15 @@ static JSONObject discord_build(int client, int cheat, int outcome)
 
 	GetCheatName(cheat, cheat_name, sizeof(cheat_name));
 
-	return discord_build_payload(name, steamid, cheat_name, playerinfo_detected[client], outcome);
+	char context[256], extra[256];
+	extra[0] = '\0';
+
+	discord_client_context(client, context, sizeof(context));
+
+	if (discord_extra_cheat[client] == cheat)
+		strcopy(extra, sizeof(extra), discord_extra[client]);
+
+	return discord_build_payload(name, steamid, cheat_name, playerinfo_detected[client], extra, context, outcome);
 }
 
 /* Drop the queued suspect reports this ban makes redundant. The first entry
@@ -479,7 +550,10 @@ public Action lilac_discord_test(int args)
 	discord_disabled = false;
 
 	JSONObject root = discord_build_payload("Lilac Test", "76561197960265728", "Test",
-		"This is a test report from lilac_discord_test.\nIf you can read it, the webhook works.", outcome);
+		"This is a test report from lilac_discord_test.\nIf you can read it, the webhook works.",
+		"Extra: lines a module adds to its evidence.",
+		"Weapon: pistol | Team: Survivor\nPing: 62ms | Loss: 0.0%/0.0% | Choke: 0.0%/0.0%\nConnected: 8m 12s",
+		outcome);
 
 	if (!discord_enqueue(root, 0, 0, outcome, true)) {
 		PrintToServer("[Lilac] Could not build the test report.");
@@ -643,6 +717,13 @@ void lilac_discord_report(int client, int cheat, int outcome)
 	#pragma unused client
 	#pragma unused cheat
 	#pragma unused outcome
+}
+
+void lilac_discord_set_extra(int client, int cheat, const char[] text)
+{
+	#pragma unused client
+	#pragma unused cheat
+	#pragma unused text
 }
 
 public Action lilac_discord_test(int args)

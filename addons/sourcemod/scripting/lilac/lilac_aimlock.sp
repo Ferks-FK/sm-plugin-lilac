@@ -91,6 +91,8 @@ public Action timer_check_aimlock(Handle timer)
 
 		bool detected = false;
 		bool process = true;
+		int hit_target = 0, hit_locked = 0;
+		float hit_dist = 0.0, hit_snap = 0.0;
 
 		for (int target = 1; process && target <= MaxClients; target++) {
 			if (aimlock_skip_target(client, target))
@@ -112,12 +114,20 @@ public Action timer_check_aimlock(Handle timer)
 			if (detected)
 				continue;
 
-			if (is_aimlocking(client, pos, pos2))
+			float snap;
+			int locked;
+
+			if (is_aimlocking(client, pos, pos2, snap, locked)) {
 				detected = true;
+				hit_target = target;
+				hit_dist = GetVectorDistance(pos, pos2);
+				hit_snap = snap;
+				hit_locked = locked;
+			}
 		}
 
 		if (detected)
-			lilac_detected_aimlock(client);
+			lilac_detected_aimlock(client, hit_target, hit_dist, hit_snap, hit_locked);
 	}
 
 	/* Completed a full sweep — restart cursor from the beginning. */
@@ -125,7 +135,7 @@ public Action timer_check_aimlock(Handle timer)
 	return Plugin_Continue;
 }
 
-static bool is_aimlocking(int client, float pos[3], float pos2[3])
+static bool is_aimlocking(int client, float pos[3], float pos2[3], float &snap, int &locked)
 {
 	float ideal[3], lang[3], ang[3];
 	float laimdist, aimdist;
@@ -152,8 +162,11 @@ static bool is_aimlocking(int client, float pos[3], float pos2[3])
 
 				if (aimdist < laimdist * 0.1
 					&& angle_delta(ang, lang) > 20.0
-					&& lock > time_to_ticks(0.1))
+					&& lock > time_to_ticks(0.1)) {
+					snap = angle_delta(ang, lang);
+					locked = lock;
 					return true;
+				}
 			}
 
 			lang = ang;
@@ -166,7 +179,7 @@ static bool is_aimlocking(int client, float pos[3], float pos2[3])
 	return false;
 }
 
-static void lilac_detected_aimlock(int client)
+static void lilac_detected_aimlock(int client, int target, float distance, float snap, int locked)
 {
 	if (playerinfo_banned_flags[client][CHEAT_AIMLOCK])
 		return;
@@ -201,6 +214,17 @@ static void lilac_detected_aimlock(int client)
 	/* Don't log the first detection. */
 	if (++playerinfo_aimlock[client] < 2)
 		return;
+
+	if (target > 0 && IsClientInGame(target)) {
+		char sExtra[192], sTarget[MAX_NAME_LENGTH], sTeam[16];
+
+		GetClientName(target, sTarget, sizeof(sTarget));
+		lilac_team_name(GetClientTeam(target), sTeam, sizeof(sTeam));
+
+		FormatEx(sExtra, sizeof(sExtra), "Target: %s (%s)\nDistance: %.0f\nSnap: %.1f deg\nLockedTicks: %d",
+			sTarget, sTeam, distance, snap, locked);
+		lilac_discord_set_extra(client, CHEAT_AIMLOCK, sExtra);
+	}
 
 	lilac_discord_report(client, CHEAT_AIMLOCK, DISCORD_SUSPECT);
 
