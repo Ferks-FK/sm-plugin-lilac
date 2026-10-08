@@ -117,6 +117,8 @@
  * or get teleported facing a survivor, which looks like an aimlock. Grace
  * covers the angle history that still spans the ghost period. */
 #define GHOST_GRACE_SECS  2.0
+#define AIMLOCK_REPEAT_SECS  1.0
+#define AIMLOCK_MIN_TRACK_DEG  0.1
 
 #define INFECTED_DMG_BAN_MIN 3
 #define SURVIVOR_DMG_BAN_MIN 3
@@ -273,6 +275,7 @@ float playerinfo_time_teleported[MAXPLAYERS + 1];
 float playerinfo_time_camera_forced[MAXPLAYERS + 1];
 float playerinfo_time_ghost[MAXPLAYERS + 1];
 float playerinfo_time_aimlock[MAXPLAYERS + 1];
+float playerinfo_time_aimlock_hit[MAXPLAYERS + 1];
 float playerinfo_time_process_aimlock[MAXPLAYERS + 1];
 float playerinfo_angles[MAXPLAYERS + 1][CMD_LENGTH][3];
 float playerinfo_time_usercmd[MAXPLAYERS + 1][CMD_LENGTH];

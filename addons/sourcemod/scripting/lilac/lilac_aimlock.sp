@@ -92,7 +92,7 @@ public Action timer_check_aimlock(Handle timer)
 		bool detected = false;
 		bool process = true;
 		int hit_target = 0, hit_locked = 0;
-		float hit_dist = 0.0, hit_snap = 0.0;
+		float hit_dist = 0.0, hit_snap = 0.0, hit_tracked = 0.0;
 
 		for (int target = 1; process && target <= MaxClients; target++) {
 			if (aimlock_skip_target(client, target))
@@ -114,20 +114,21 @@ public Action timer_check_aimlock(Handle timer)
 			if (detected)
 				continue;
 
-			float snap;
+			float snap, tracked;
 			int locked;
 
-			if (is_aimlocking(client, pos, pos2, snap, locked)) {
+			if (is_aimlocking(client, pos, pos2, snap, locked, tracked)) {
 				detected = true;
 				hit_target = target;
 				hit_dist = GetVectorDistance(pos, pos2);
 				hit_snap = snap;
 				hit_locked = locked;
+				hit_tracked = tracked;
 			}
 		}
 
 		if (detected)
-			lilac_detected_aimlock(client, hit_target, hit_dist, hit_snap, hit_locked);
+			lilac_detected_aimlock(client, hit_target, hit_dist, hit_snap, hit_locked, hit_tracked);
 	}
 
 	/* Completed a full sweep — restart cursor from the beginning. */
@@ -135,10 +136,11 @@ public Action timer_check_aimlock(Handle timer)
 	return Plugin_Continue;
 }
 
-static bool is_aimlocking(int client, float pos[3], float pos2[3], float &snap, int &locked)
+static bool is_aimlocking(int client, float pos[3], float pos2[3], float &snap, int &locked, float &tracked)
 {
 	float ideal[3], lang[3], ang[3];
 	float laimdist, aimdist;
+	float path = 0.0;
 	int lock = 0;
 	int ind;
 
@@ -155,16 +157,26 @@ static bool is_aimlocking(int client, float pos[3], float pos2[3], float &snap, 
 			laimdist = angle_delta(ang, ideal);
 
 			if (i) {
-				if (aimdist < 5.0)
+				if (aimdist < 5.0) {
 					lock++;
-				else
-					lock = 0;
 
+					/* Both ticks on target, add how much the aim moved. */
+					if (laimdist < 5.0)
+						path += angle_delta(ang, lang);
+				}
+				else {
+					lock = 0;
+					path = 0.0;
+				}
+
+				/* A frozen view (cutscene) has a lock but no tracking. */
 				if (aimdist < laimdist * 0.1
 					&& angle_delta(ang, lang) > 20.0
-					&& lock > time_to_ticks(0.1)) {
+					&& lock > time_to_ticks(0.1)
+					&& path >= AIMLOCK_MIN_TRACK_DEG) {
 					snap = angle_delta(ang, lang);
 					locked = lock;
+					tracked = path;
 					return true;
 				}
 			}
@@ -179,10 +191,16 @@ static bool is_aimlocking(int client, float pos[3], float pos2[3], float &snap, 
 	return false;
 }
 
-static void lilac_detected_aimlock(int client, int target, float distance, float snap, int locked)
+static void lilac_detected_aimlock(int client, int target, float distance, float snap, int locked, float tracked)
 {
 	if (playerinfo_banned_flags[client][CHEAT_AIMLOCK])
 		return;
+
+	/* The same snap stays in the check window for a while, count it once. */
+	if (GetGameTime() - playerinfo_time_aimlock_hit[client] < AIMLOCK_REPEAT_SECS)
+		return;
+
+	playerinfo_time_aimlock_hit[client] = GetGameTime();
 
 	/* Suspicions reset after 3 minutes.
 	 * This means you need to get two aimlocks within
@@ -215,15 +233,21 @@ static void lilac_detected_aimlock(int client, int target, float distance, float
 	if (++playerinfo_aimlock[client] < 2)
 		return;
 
+	char sInfo[256];
+	sInfo[0] = '\0';
+
 	if (target > 0 && IsClientInGame(target)) {
-		char sExtra[192], sTarget[MAX_NAME_LENGTH], sTeam[16];
+		char sExtra[256], sTarget[MAX_NAME_LENGTH], sTeam[16];
 
 		GetClientName(target, sTarget, sizeof(sTarget));
 		lilac_team_name(GetClientTeam(target), sTeam, sizeof(sTeam));
 
-		FormatEx(sExtra, sizeof(sExtra), "Target: %s (%s)\nDistance: %.0f\nSnap: %.1f deg\nLockedTicks: %d",
-			sTarget, sTeam, distance, snap, locked);
+		FormatEx(sExtra, sizeof(sExtra), "Target: %s (%s)\nDistance: %.0f\nSnap: %.1f deg\nLockedTicks: %d\nTracked: %.1f deg",
+			sTarget, sTeam, distance, snap, locked, tracked);
 		lilac_discord_set_extra(client, CHEAT_AIMLOCK, sExtra);
+
+		FormatEx(sInfo, sizeof(sInfo), "Target: %s (%s), Distance: %.0f, Snap: %.1f deg, Locked: %d ticks, Tracked: %.1f deg",
+			sTarget, sTeam, distance, snap, locked, tracked);
 	}
 
 	lilac_discord_report(client, CHEAT_AIMLOCK, DISCORD_SUSPECT);
@@ -233,9 +257,15 @@ static void lilac_detected_aimlock(int client, int target, float distance, float
 
 	if (icvar[CVAR_LOG]) {
 		lilac_log_setup_client(client);
-		Format(line_buffer, sizeof(line_buffer),
-			"%s is suspected of using an aimlock (%s).",
-			line_buffer, sDetails);
+
+		if (sInfo[0])
+			Format(line_buffer, sizeof(line_buffer),
+				"%s is suspected of using an aimlock (%s, %s).",
+				line_buffer, sDetails, sInfo);
+		else
+			Format(line_buffer, sizeof(line_buffer),
+				"%s is suspected of using an aimlock (%s).",
+				line_buffer, sDetails);
 
 		lilac_log(true);
 

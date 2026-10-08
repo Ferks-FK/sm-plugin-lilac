@@ -107,6 +107,7 @@ void lilac_reset_client(int client)
     playerinfo_time_camera_forced[client] = 0.0;
     playerinfo_time_ghost[client] = 0.0;
     playerinfo_time_aimlock[client] = 0.0;
+    playerinfo_time_aimlock_hit[client] = -10.0;
     playerinfo_time_process_aimlock[client] = 0.0;
     Format(playerinfo_detected[client], sizeof(playerinfo_detected[]), "");
 
