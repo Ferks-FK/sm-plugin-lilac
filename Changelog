@@ -1,3 +1,22 @@
+1.8.5
+- Add new Survivor Damage burst-exploit detection module (L4D2).
+- Add server TPS detection to pause Speedhack checks during server lag/stalls.
+- Fix stale tickrate read that was silently affecting Bhop, Macro and tickbase-clamp thresholds.
+- Fix Bhop off-by-one on a streak's first jump, a Min/Max detection blind spot, and Total=1 not banning on the first detection.
+- Improve network loss/choke veto shared by Aimbot, Aimlock and Speedhack.
+- Fix SQL escaping in database logging.
+- Update Speedhack ban minimum to 3 detections.
+- Add MatchID display support in detections (AutoRecorder integration).
+- Add optional Discord webhook reports for bans, kicks and suspected detections (needs the REST in Pawn extension, see the lilac_discord ConVars).
+- Add the lilac_discord_test command to check the Discord webhook.
+- Skip Aimlock checks for infected players in ghost state, where spawning and teleporting face a survivor and caused false positives.
+- Network veto: choke above 100% (corrupted by tickbase manipulation) no longer vetoes Aimbot, Aimlock and Speedhack, and the choke veto now only applies from 90%.
+- Speedhack: corrupted choke values no longer block the ban.
+- ConVar module: fix float comparison on SourceMod 1.13 that could ban legitimate players (issue #41).
+- ConVar module: do not punish players for ConVars that have no rule.
+- Survivor Damage Module: raise the minigun threshold.
+- Add ping message translations for all languages.
+
 1.8.2
 - SpeedHack Module: Adjust detection for players with bad connection.
 - Convar Module: Update to support range/max values.

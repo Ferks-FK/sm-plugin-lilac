@@ -146,9 +146,6 @@ void lilac_config_setup()
     hcvar[CVAR_NET_VETO] = new Convar("lilac_network_veto", "1",
         "Veto Aimbot, Aimlock & Speedhack detections when the player's connection makes timing-based analysis unreliable (ping, jitter, packet loss or choke).",
         FCVAR_PROTECTED, true, 0.0, true, 1.0);
-    hcvar[CVAR_AUTO_UPDATE] = new Convar("lilac_auto_update", "0",
-        "Automatically update Little Anti-Cheat.",
-        FCVAR_PROTECTED, true, 0.0, true, 1.0);
     hcvar[CVAR_DATABASE] = new Convar("lilac_database", "",
         "Database to log detections to.\nempty = don't log to database\ndatabase name = log to this database (MySQL & SQLite supported)",
         FCVAR_PROTECTED);
@@ -768,11 +765,6 @@ public void cvar_change(ConVar convar, const char[] oldValue, const char[] newVa
     }
     else if (convar == hcvar[CVAR_SPEEDHACK]) {
         icvar[CVAR_SPEEDHACK] = StringToInt(newValue);
-    }
-    else if (convar == hcvar[CVAR_AUTO_UPDATE]) {
-        icvar[CVAR_AUTO_UPDATE] = StringToInt(newValue);
-        
-        lilac_update_url();
     }
     else if (convar == hcvar[CVAR_DATABASE]) {
         strcopy(db_name, sizeof(db_name), newValue);

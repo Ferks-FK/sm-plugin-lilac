@@ -82,8 +82,6 @@ public APLRes AskPluginLoad2(Handle hMyself, bool bLate, char[] sError, int err_
         MarkNativeAsOptional("SBBanPlayer");
         MarkNativeAsOptional("SBPP_BanPlayer");
         MarkNativeAsOptional("MABanPlayer");
-        MarkNativeAsOptional("Updater_AddPlugin");
-        MarkNativeAsOptional("Updater_RemovePlugin");
         MarkNativeAsOptional("IRC_MsgFlaggedChannels");
         MarkNativeAsOptional("AR_GetMatchID");
 
@@ -191,37 +189,8 @@ static void lilac_apply_tick_settings()
 
 public void OnAllPluginsLoaded()
 {
-    if (LibraryExists("updater"))
-        lilac_update_url();
-
     /* Startup message. */
     PrintToServer("[Little Anti-Cheat %s] Successfully loaded!", PLUGIN_VERSION);
-}
-
-public void OnLibraryAdded(const char []name)
-{
-    if (StrEqual(name, "updater"))
-        lilac_update_url();
-}
-
-void lilac_update_url()
-{
-	if (icvar[CVAR_AUTO_UPDATE]) {
-		if (!NATIVE_EXISTS("Updater_AddPlugin")) {
-			PrintToServer("Error: Native Updater_AddPlugin() not found! Check if updater plugin is installed.");
-			return;
-		}
-
-		Updater_AddPlugin(UPDATE_URL);
-	}
-	else {
-		if (!NATIVE_EXISTS("Updater_RemovePlugin")) {
-			PrintToServer("Error: Native Updater_RemovePlugin() not found! Check if updater plugin is installed.");
-			return;
-		}
-
-		Updater_RemovePlugin();
-	}
 }
 
 public void OnClientPutInServer(int client)

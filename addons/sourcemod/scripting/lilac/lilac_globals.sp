@@ -17,7 +17,6 @@
 */
 
 #define NATIVE_EXISTS(%0)   (GetFeatureStatus(FeatureType_Native, %0) == FeatureStatus_Available)
-#define UPDATE_URL          "https://raw.githubusercontent.com/Ferks-FK/sm-plugin-lilac/refs/heads/master/updatefile.txt"
 
 #define CMD_LENGTH   330
 
@@ -56,19 +55,18 @@
 #define CVAR_FILTER_NAME           32
 #define CVAR_FILTER_CHAT           33
 #define CVAR_LOSS_FIX              34
-#define CVAR_AUTO_UPDATE           35
-#define CVAR_SOURCEIRC             36
-#define CVAR_DATABASE              37
-#define CVAR_SPEEDHACK             38
-#define CVAR_INFECTED_DMG          39
-#define CVAR_NET_VETO              40
-#define CVAR_SURVIVOR_DMG          41
-#define CVAR_DISCORD               42
-#define CVAR_DISCORD_WEBHOOK       43
-#define CVAR_DISCORD_ROLE          44
-#define CVAR_DISCORD_ADDRESS       45
-#define CVAR_DISCORD_LOGO          46
-#define CVAR_MAX                   47
+#define CVAR_SOURCEIRC             35
+#define CVAR_DATABASE              36
+#define CVAR_SPEEDHACK             37
+#define CVAR_INFECTED_DMG          38
+#define CVAR_NET_VETO              39
+#define CVAR_SURVIVOR_DMG          40
+#define CVAR_DISCORD               41
+#define CVAR_DISCORD_WEBHOOK       42
+#define CVAR_DISCORD_ROLE          43
+#define CVAR_DISCORD_ADDRESS       44
+#define CVAR_DISCORD_LOGO          45
+#define CVAR_MAX                   46
 
 /* What happened to the player, for Discord reports. */
 #define DISCORD_BANNED             0
@@ -324,6 +322,4 @@ native Function IRC_MsgFlaggedChannels(const char[] flag, const char[] format, a
 native Function MABanPlayer(int iClient, int iTarget, int iType, int iTime, char[] sReason);
 native Function SBBanPlayer(int client, int target, int time, const char[] reason);
 native Function SBPP_BanPlayer(int iAdmin, int iTarget, int iTime, const char[] sReason);
-native Function Updater_AddPlugin(const char[] url);
-native Function Updater_RemovePlugin();
 native bool AR_GetMatchID(char[] matchID, int maxlen);

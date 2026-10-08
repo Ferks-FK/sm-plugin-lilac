@@ -4,7 +4,7 @@ Little Anti-Cheat (Lilac) is a free and open source anti-cheat for Source games,
 It was originally developed by J_Tanzanite, and this repository is a maintained fork of the [SRCDSLAB fork](https://github.com/srcdslab/sm-plugin-lilac), with extra focus on Left 4 Dead 2 servers.\
 This Anti-Cheat is by no means perfect, and it is bypassable to some extent, but it should still be helpful in dealing with cheaters :)
 
-Current version: **1.8.5** (see [`updatefile.txt`](updatefile.txt) for the latest release notes).
+Current version: **1.8.5** (see the [`Changelog`](Changelog) for the release notes).
 
 ### Current Cheat Detections:
  - Angle-Cheats (Basic Anti-Aims and Duckspeed).
@@ -54,9 +54,6 @@ The plugin is built with the SourceMod 1.12 compiler by the CI, so SourceMod 1.1
 ### Building
 Compile `addons/sourcemod/scripting/lilac.sp` with `spcomp`. All modules in `addons/sourcemod/scripting/lilac/` are included by that single file.\
 The GitHub Actions workflow (`.github/workflows/ci.yml`) does this on every push.
-
-### Updating
-Set `lilac_auto_update 1` to let the Updater plugin keep Lilac up to date from this fork. `updatefile.txt` is kept in sync with the version by the CI.
 
 ## Configuration
 All settings are ConVars. The ones you are most likely to change:
@@ -220,7 +217,6 @@ Just understandable to those who don't speak English too well.
  - SourceIRC
  - [AutoRecorder](https://github.com/Ferks-FK/sm-plugins/tree/development/autorecorder)
  - REST in Pawn (for Discord reports)
- - Updater
 
 <details>
 <summary>See old Closing notes from J_Tanzanite (before SRCDSLAB fork)</summary>
