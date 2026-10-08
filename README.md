@@ -28,7 +28,7 @@ Current version: **1.8.5** (see [`updatefile.txt`](updatefile.txt) for the lates
  - Invalid name detection.
  - Invalid characters in chat patch (+ chat clear exploit fix).
  - Network veto: Aimbot, Aimlock and Speedhack detections are ignored while the player's ping, jitter, packet loss or choke make timing-based analysis unreliable.
- - Tickbase correction (players with a tickbase behind the server are clamped, players ahead of it are only logged).
+ - Tickbase correction (players with a tickbase behind the server are clamped, players ahead of it are only logged). A player whose tickbase keeps growing past 5 seconds ahead is no longer ignored by the network veto, and an alert is sent to Discord when it reaches 10 seconds.
  - Ghost-state protection (L4D2): infected players are not checked for Aimlock while they are in ghost state, as spawning/teleporting there faces a survivor and looks like an aimlock.
  - Detection warnings to admins in chat, translated to the language of each player.
  - Discord webhook reports for bans, kicks and suspected detections (Optional, disabled by default, needs the REST in Pawn extension).

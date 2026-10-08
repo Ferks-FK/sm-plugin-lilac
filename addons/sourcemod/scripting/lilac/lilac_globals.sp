@@ -75,6 +75,9 @@
 #define DISCORD_KICKED             1
 #define DISCORD_SUSPECT            2
 
+/* Report type that isn't a Lilac cheat (kept after the real ones). */
+#define DISCORD_CHEAT_TICKBASE     CHEAT_MAX
+
 #define BHOP_INDEX_MIN     0
 #define BHOP_INDEX_JUMP    1
 #define BHOP_INDEX_MAX     2
@@ -181,6 +184,19 @@
  * lilac_tickbase_fix_log_ahead(). */
 #define TICKBASE_AHEAD_LOG_SECS  2
 
+/* A client this far ahead has corrupted loss/choke stats, so they must not
+ * veto its detections. The Discord alert is for the extreme cases. */
+#define TICKBASE_RUNAWAY_SECS        5
+#define TICKBASE_RUNAWAY_ALERT_SECS  10
+#define TICKBASE_RUNAWAY_GRACE_SECS  60.0
+
+/* It also has to keep growing: a stable lead is a stutter or low FPS. */
+#define TICKBASE_RUNAWAY_GROWTH_SECS    2
+#define TICKBASE_RUNAWAY_GROWTH_WINDOW  10.0
+
+/* Right after a server stall the leads are not manipulation. */
+#define TICKBASE_RUNAWAY_LAG_GRACE_SECS 30.0
+
 #define PLUGIN_NAME      "[Lilac] Little Anti-Cheat"
 #define PLUGIN_AUTHOR    "J_Tanzanite, Ferks-FK"
 #define PLUGIN_DESC      "An opensource Anti-Cheat"
@@ -227,6 +243,12 @@ bool  g_bTPSWindowArmed      = false;
 // Tracks whether the server is currently in a lag pause state.
 float g_flTickbaseLastLog[MAXPLAYERS + 1];
 float g_flTickbaseAheadLastLog[MAXPLAYERS + 1];
+float g_flTickbaseRunawayStart[MAXPLAYERS + 1];
+float g_flTickbaseRunawayLast[MAXPLAYERS + 1];
+float g_flTickbaseRunawayBaseTime[MAXPLAYERS + 1];
+int   g_iTickbaseRunawayBase[MAXPLAYERS + 1];
+bool  g_bTickbaseRunawayConfirmed[MAXPLAYERS + 1];
+bool  g_bTickbaseRunawayAlerted[MAXPLAYERS + 1];
 
 /* Convars. */
 Convar hcvar[CVAR_MAX]; /* ConVar = built in SourceMod  |  Convar = kidfearless's convar_class */

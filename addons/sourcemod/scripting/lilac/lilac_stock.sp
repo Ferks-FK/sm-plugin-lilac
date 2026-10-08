@@ -849,6 +849,12 @@ void lilac_tickbase_fix_reset_client(int client)
 {
     g_flTickbaseLastLog[client]      = 0.0;
     g_flTickbaseAheadLastLog[client] = 0.0;
+    g_flTickbaseRunawayStart[client] = 0.0;
+    g_flTickbaseRunawayLast[client]  = 0.0;
+    g_flTickbaseRunawayBaseTime[client] = 0.0;
+    g_iTickbaseRunawayBase[client] = 0;
+    g_bTickbaseRunawayConfirmed[client] = false;
+    g_bTickbaseRunawayAlerted[client] = false;
 }
 
 void lilac_tickbase_fix(int client)
@@ -915,20 +921,79 @@ static void lilac_tickbase_fix_log(int client, int magnitude)
         lilac_log_extra(client);
 }
 
+static bool lilac_tickbase_runaway_active(int client)
+{
+    return g_flTickbaseRunawayLast[client] > 0.0
+        && GetEngineTime() - g_flTickbaseRunawayLast[client] < TICKBASE_RUNAWAY_GRACE_SECS;
+}
+
+/* True while the client's tickbase is far ahead of the server and growing,
+ * which is what the exploit does. A stable lead is not manipulation. */
+bool lilac_tickbase_runaway(int client)
+{
+    return g_bTickbaseRunawayConfirmed[client] && lilac_tickbase_runaway_active(client);
+}
+
+static void lilac_tickbase_runaway_mark(int client, int magnitude)
+{
+    float now = GetEngineTime();
+
+    /* Quiet for a while, so this is a new episode. */
+    if (!lilac_tickbase_runaway_active(client)) {
+        g_flTickbaseRunawayStart[client] = now;
+        g_flTickbaseRunawayBaseTime[client] = now;
+        g_iTickbaseRunawayBase[client] = magnitude;
+        g_bTickbaseRunawayConfirmed[client] = false;
+        g_bTickbaseRunawayAlerted[client] = false;
+    }
+
+    g_flTickbaseRunawayLast[client] = now;
+
+    if (!g_bTickbaseRunawayConfirmed[client]) {
+        if (magnitude >= g_iTickbaseRunawayBase[client] + tick_rate * TICKBASE_RUNAWAY_GROWTH_SECS) {
+            g_bTickbaseRunawayConfirmed[client] = true;
+        }
+        else if (now - g_flTickbaseRunawayBaseTime[client] > TICKBASE_RUNAWAY_GROWTH_WINDOW) {
+            /* Not growing fast enough, measure again from here. */
+            g_flTickbaseRunawayBaseTime[client] = now;
+            g_iTickbaseRunawayBase[client] = magnitude;
+        }
+    }
+
+    if (!g_bTickbaseRunawayConfirmed[client]
+        || g_bTickbaseRunawayAlerted[client]
+        || magnitude < tick_rate * TICKBASE_RUNAWAY_ALERT_SECS
+        || now - g_flTickbaseRunawayStart[client] < 1.0)
+        return;
+
+    g_bTickbaseRunawayAlerted[client] = true;
+
+    char sDetails[128];
+    FormatEx(sDetails, sizeof(sDetails), "Ahead: %d ticks (%.1fs) | Sustained: %.1fs",
+        magnitude, float(magnitude) * GetTickInterval(), now - g_flTickbaseRunawayStart[client]);
+
+    lilac_discord_report_details(client, DISCORD_CHEAT_TICKBASE, DISCORD_SUSPECT, sDetails);
+}
+
 /* Calibration-only. Can grow a detection counter/ban path once real data
  * shows where a stutter ends and sustained abuse begins. */
 static void lilac_tickbase_fix_log_ahead(int client, int magnitude)
 {
-    if (!icvar[CVAR_LOG])
-        return;
-
     if (GetGameTime() - playerinfo_time_teleported[client] < 3.0)
         return;
 
     if (lilac_server_is_lagging())
         return;
 
-    float now = GetGameTime();
+    if (magnitude > tick_rate * TICKBASE_RUNAWAY_SECS
+        && GetEngineTime() >= g_fServerLagPauseUntil + TICKBASE_RUNAWAY_LAG_GRACE_SECS)
+        lilac_tickbase_runaway_mark(client, magnitude);
+
+    if (!icvar[CVAR_LOG])
+        return;
+
+    /* Real time: game time is the player's own clock here. */
+    float now = GetEngineTime();
     if (now - g_flTickbaseAheadLastLog[client] < 5.0)
         return;
 

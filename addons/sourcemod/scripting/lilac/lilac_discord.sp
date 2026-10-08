@@ -53,7 +53,7 @@ static bool discord_inflight = false;     /* The first entry is being sent. */
 static float discord_inflight_since = 0.0;
 static bool discord_disabled = false;     /* The webhook was refused, stop until it changes. */
 static float discord_next_send = 0.0;
-static float discord_last_suspect[MAXPLAYERS + 1][CHEAT_MAX];
+static float discord_last_suspect[MAXPLAYERS + 1][CHEAT_MAX + 1];
 
 /* Extra evidence lines a module adds for Discord only. Kept per cheat, so
  * the lines of one cheat never show up on another's report. */
@@ -70,7 +70,7 @@ void lilac_discord_init()
 
 void lilac_discord_reset_client(int client)
 {
-	for (int i = 0; i < CHEAT_MAX; i++)
+	for (int i = 0; i <= CHEAT_MAX; i++)
 		discord_last_suspect[client][i] = 0.0;
 
 	discord_extra[client][0] = '\0';
@@ -400,7 +400,7 @@ static JSONObject discord_build_payload(const char[] name, const char[] steamid,
 	return root;
 }
 
-static JSONObject discord_build(int client, int cheat, int outcome)
+static JSONObject discord_build(int client, int cheat, int outcome, const char[] details)
 {
 	char name[MAX_NAME_LENGTH], steamid[32], cheat_name[64];
 
@@ -409,7 +409,12 @@ static JSONObject discord_build(int client, int cheat, int outcome)
 	if (!GetClientAuthId(client, AuthId_SteamID64, steamid, sizeof(steamid), true))
 		steamid[0] = '\0';
 
-	GetCheatName(cheat, cheat_name, sizeof(cheat_name));
+	cheat_name[0] = '\0';
+
+	if (cheat == DISCORD_CHEAT_TICKBASE)
+		strcopy(cheat_name, sizeof(cheat_name), "Tickbase");
+	else
+		GetCheatName(cheat, cheat_name, sizeof(cheat_name));
 
 	char context[256], extra[256];
 	extra[0] = '\0';
@@ -419,7 +424,7 @@ static JSONObject discord_build(int client, int cheat, int outcome)
 	if (discord_extra_cheat[client] == cheat)
 		strcopy(extra, sizeof(extra), discord_extra[client]);
 
-	return discord_build_payload(name, steamid, cheat_name, playerinfo_detected[client], extra, context, outcome);
+	return discord_build_payload(name, steamid, cheat_name, details, extra, context, outcome);
 }
 
 /* Drop the queued suspect reports this ban makes redundant. The first entry
@@ -440,9 +445,20 @@ static void discord_drop_suspects(int userid, int cheat)
 	}
 }
 
-/* Queue a report for this player. Safe to call whenever, it decides on its own
- * if anything should be sent. */
+/* Queue a report with the details Lilac saved for this player. Safe to call
+ * whenever, it decides on its own if anything should be sent. */
 void lilac_discord_report(int client, int cheat, int outcome)
+{
+	discord_report(client, cheat, outcome, playerinfo_detected[client]);
+}
+
+/* Same, with details given by the caller. */
+void lilac_discord_report_details(int client, int cheat, int outcome, const char[] details)
+{
+	discord_report(client, cheat, outcome, details);
+}
+
+static void discord_report(int client, int cheat, int outcome, const char[] details)
 {
 	char url[512];
 
@@ -452,7 +468,7 @@ void lilac_discord_report(int client, int cheat, int outcome)
 	if (outcome == DISCORD_SUSPECT && icvar[CVAR_DISCORD] < 2)
 		return;
 
-	if (cheat < 0 || cheat >= CHEAT_MAX)
+	if (cheat < 0 || cheat > DISCORD_CHEAT_TICKBASE)
 		return;
 
 	if (!is_player_valid(client) || IsFakeClient(client))
@@ -480,7 +496,7 @@ void lilac_discord_report(int client, int cheat, int outcome)
 		discord_drop_suspects(userid, cheat);
 	}
 
-	discord_enqueue(discord_build(client, cheat, outcome), userid, cheat, outcome, false);
+	discord_enqueue(discord_build(client, cheat, outcome, details), userid, cheat, outcome, false);
 }
 
 /* Serialize and queue a report. Takes ownership of root. */
@@ -717,6 +733,14 @@ void lilac_discord_report(int client, int cheat, int outcome)
 	#pragma unused client
 	#pragma unused cheat
 	#pragma unused outcome
+}
+
+void lilac_discord_report_details(int client, int cheat, int outcome, const char[] details)
+{
+	#pragma unused client
+	#pragma unused cheat
+	#pragma unused outcome
+	#pragma unused details
 }
 
 void lilac_discord_set_extra(int client, int cheat, const char[] text)

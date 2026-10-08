@@ -168,6 +168,10 @@ bool lilac_network_vetoed(int client)
 	if (lilac_network_get_max_ping(client) >= NET_MAX_PING)
 		return true;
 
+	/* Loss and choke of a player far ahead in tickbase are corrupted. */
+	if (lilac_tickbase_runaway(client))
+		return false;
+
 	if (GetClientAvgLoss(client, NetFlow_Incoming) >= NET_MAX_LOSS
 		|| GetClientAvgLoss(client, NetFlow_Outgoing) >= NET_MAX_LOSS)
 		return true;
