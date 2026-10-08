@@ -485,6 +485,37 @@ void set_player_log_angles(int client, float ang[3], int tick)
 	playerinfo_angles[client][i][2] = ang[2];
 }
 
+/* True when f is neither inf nor NaN. Checks the IEEE 754 exponent bits
+ * directly, since any comparison against NaN is false and can't be trusted. */
+bool is_float_finite(float f)
+{
+	return (view_as<int>(f) & 0x7F800000) != 0x7F800000;
+}
+
+bool are_angles_finite(const float ang[3])
+{
+	return is_float_finite(ang[0]) && is_float_finite(ang[1]) && is_float_finite(ang[2]);
+}
+
+/* Formats a float with %.2f, or as "NaN"/"inf"/"-inf" when non-finite.
+ * SM 1.12's %f has undefined output for inf, so never pass it one. */
+void format_float_safe(char[] buffer, int maxlen, float f)
+{
+	int bits = view_as<int>(f);
+
+	if (is_float_finite(f))
+		FormatEx(buffer, maxlen, "%.2f", f);
+	else if (bits & 0x007FFFFF)
+		strcopy(buffer, maxlen, "NaN");
+	else
+		strcopy(buffer, maxlen, (bits < 0) ? "-inf" : "inf");
+}
+
+float finite_or_zero(float f)
+{
+	return is_float_finite(f) ? f : 0.0;
+}
+
 void aim_at_point(const float p1[3], const float p2[3], float writeto[3])
 {
 	SubtractVectors(p2, p1, writeto);

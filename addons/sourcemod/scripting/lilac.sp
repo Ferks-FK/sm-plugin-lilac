@@ -271,6 +271,15 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
     if (!is_player_valid(client) || IsFakeClient(client))
         return Plugin_Continue;
 
+    /* NaN/inf angles are never legitimate. Detect them (CSS/DoD:S only),
+     * then fall back to the last stored angles so they never spread. */
+    if (!are_angles_finite(angles)) {
+        if (icvar[CVAR_ENABLE] && icvar[CVAR_ANGLES] && (g_bGame == Engine_CSS || g_bGame == Engine_DODS))
+            lilac_angles_check(client, angles);
+
+        get_player_log_angles(client, 0, true, angles);
+    }
+
     /* Increment the index. */
     if (++playerinfo_index[client] >= CMD_LENGTH)
         playerinfo_index[client] = 0;

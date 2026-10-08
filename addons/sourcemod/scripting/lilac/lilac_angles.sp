@@ -21,7 +21,9 @@ void lilac_angles_check(int client, float angles[3])
     if (!IsPlayerAlive(client) || playerinfo_time_teleported[client] + 5.0 > GetGameTime())
         return;
 
-    if ((FloatAbs(angles[0]) > max_angles[0] && max_angles[0]) || (FloatAbs(angles[2]) > max_angles[2] && max_angles[2]))
+    if (!are_angles_finite(angles)
+        || (FloatAbs(angles[0]) > max_angles[0] && max_angles[0])
+        || (FloatAbs(angles[2]) > max_angles[2] && max_angles[2]))
         lilac_detected_angles(client, angles);
 }
 
@@ -56,8 +58,11 @@ static void lilac_detected_angles(int client, float ang[3])
 
 	playerinfo_banned_flags[client][CHEAT_ANGLES] = true;
 
-	char sDetails[512];
-	Format(sDetails, sizeof(sDetails), "Pitch: %.2f, Yaw: %.2f, Roll: %.2f", ang[0], ang[1], ang[2]);
+	char sDetails[512], sPitch[32], sYaw[32], sRoll[32];
+	format_float_safe(sPitch, sizeof(sPitch), ang[0]);
+	format_float_safe(sYaw, sizeof(sYaw), ang[1]);
+	format_float_safe(sRoll, sizeof(sRoll), ang[2]);
+	Format(sDetails, sizeof(sDetails), "Pitch: %s, Yaw: %s, Roll: %s", sPitch, sYaw, sRoll);
 
 	lilac_save_player_details(client, sDetails);
 	lilac_forward_client_cheat(client, CHEAT_ANGLES);
