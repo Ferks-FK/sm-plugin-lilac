@@ -325,7 +325,7 @@ public Action timer_check_aimbot(Handle timer, DataPack pack)
             if (sm_cv < 0.28 && sm_avg_jerk < 0.04)
                 lilac_log_smooth_telemetry(client, sm_n, sm_cv, sm_avg_jerk, sm_total_delta, final_dist);
 
-            /* Not yet calibrated — store in flag_smooth, not detected. */
+            /* Counts towards a detection once it repeats, see below. */
             if (sm_cv < 0.20 && sm_avg_jerk < 0.022 && final_dist < 5.0)
                 flag_smooth = true;
         }
