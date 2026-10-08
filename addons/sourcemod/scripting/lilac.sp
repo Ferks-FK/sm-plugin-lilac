@@ -91,6 +91,7 @@ public APLRes AskPluginLoad2(Handle hMyself, bool bLate, char[] sError, int err_
         BuildPath(Path_SM, log_file, sizeof(log_file), "logs/lilac.log");
         BuildPath(Path_SM, smooth_telemetry_log_file, sizeof(smooth_telemetry_log_file), "logs/lilac_smooth_telemetry.log");
         BuildPath(Path_SM, angle_metric_log_file, sizeof(angle_metric_log_file), "logs/lilac_angle_metric.log");
+        BuildPath(Path_SM, speedhack_shadow_log_file, sizeof(speedhack_shadow_log_file), "logs/lilac_speedhack_shadow.log");
 
         return APLRes_Success;
     }

@@ -19,6 +19,13 @@
 // ===== Constants =====
 #define SPEEDHACK_NET_VETO_GRACE     20.0    // Seconds to keep suppressing after the network veto clears
 
+// Shadow mode: only logs what a per-player rule would decide.
+#define SHADOW_LEARN_SECS            30      // Seconds spent learning a player's normal.
+#define SHADOW_MEMORY_SECS           60.0    // How slowly his normal follows him afterwards.
+#define SHADOW_MIN_CONTRAST          1.5     // How far above his normal counts as suspicious.
+#define SHADOW_NOTE_COOLDOWN         30.0    // Seconds between "not banned" lines per player.
+#define SHADOW_CONTRAST_KEEP         3       // Recent suspicious seconds the decision looks at.
+
 // ===== Per-client state =====
 static int speedhack_detection[MAXPLAYERS + 1];
 static float player_avg_choke[MAXPLAYERS + 1];
@@ -26,6 +33,16 @@ static float player_avg_choke[MAXPLAYERS + 1];
 // Network veto grace period tracking — GetGameTime() of the last tick the
 // shared network veto (lilac_network_vetoed) flagged this client, 0.0 = never.
 static float player_last_vetoed[MAXPLAYERS + 1];
+
+// Shadow mode, per player.
+static float shadow_normal[MAXPLAYERS + 1];
+static float shadow_seed_sum[MAXPLAYERS + 1];
+static int shadow_observed[MAXPLAYERS + 1];
+static float shadow_contrast[MAXPLAYERS + 1][SHADOW_CONTRAST_KEEP];
+static int shadow_contrast_count[MAXPLAYERS + 1];
+static bool shadow_would_ban_logged[MAXPLAYERS + 1];
+static float shadow_last_note[MAXPLAYERS + 1];
+static float shadow_last_flag[MAXPLAYERS + 1];
 
 // Server-wide
 static ConVar g_hMaxCmdrate = null;
@@ -40,7 +57,119 @@ void lilac_speedhack_reset_client(int client)
     player_avg_choke[client] = 0.0;
     player_last_vetoed[client] = 0.0;
 
+    shadow_normal[client] = 0.0;
+    shadow_seed_sum[client] = 0.0;
+    shadow_observed[client] = 0;
+    shadow_contrast_count[client] = 0;
+    shadow_would_ban_logged[client] = false;
+    shadow_last_note[client] = 0.0;
+    shadow_last_flag[client] = 0.0;
+
     lilac_tickbase_fix_reset_client(client);
+}
+
+static void lilac_speedhack_shadow_decide(int client, int count, float normal, float contrast)
+{
+    /* Same detection count the real rule asks for. */
+    if (icvar[CVAR_SPEEDHACK] < SPEEDHACK_BAN_MIN
+        || speedhack_detection[client] < icvar[CVAR_SPEEDHACK])
+        return;
+
+    int n = (shadow_contrast_count[client] < SHADOW_CONTRAST_KEEP)
+        ? shadow_contrast_count[client] : SHADOW_CONTRAST_KEEP;
+
+    float vals[SHADOW_CONTRAST_KEEP];
+    for (int i = 0; i < n; i++)
+        vals[i] = shadow_contrast[client][i];
+
+    /* Median of the recent suspicious seconds. */
+    for (int i = 1; i < n; i++) {
+        float key = vals[i];
+        int j = i - 1;
+
+        while (j >= 0 && vals[j] > key) {
+            vals[j + 1] = vals[j];
+            j--;
+        }
+
+        vals[j + 1] = key;
+    }
+
+    if (n == 0)
+        return;
+
+    float median = vals[n / 2];
+    bool would_ban = (median >= SHADOW_MIN_CONTRAST);
+
+    if (would_ban) {
+        if (shadow_would_ban_logged[client])
+            return;
+
+        shadow_would_ban_logged[client] = true;
+    }
+    else {
+        /* Already would have been banned, later lines would only confuse. */
+        if (shadow_would_ban_logged[client])
+            return;
+
+        float now = GetEngineTime();
+
+        if (now - shadow_last_note[client] < SHADOW_NOTE_COOLDOWN)
+            return;
+
+        shadow_last_note[client] = now;
+    }
+
+    /* Several players over the limit at once points to a server event. */
+    int others = 0;
+    float flag_now = GetEngineTime();
+
+    for (int i = 1; i <= MaxClients; i++) {
+        if (i != client && is_player_valid(i)
+            && shadow_last_flag[i] > 0.0 && flag_now - shadow_last_flag[i] <= 3.0)
+            others++;
+    }
+
+    char sMessage[256];
+    FormatEx(sMessage, sizeof(sMessage),
+        "%s | Detection: %d | CmdsPerSec: %d | Normal: %.0f | Contrast: %.1f | MedianContrast: %.1f | AvgChoke: %.2f | Observed: %ds | OthersFlagged: %d",
+        would_ban ? "WOULD BAN (today: no ban, choke gate)" : "not banned, looks normal for this player",
+        speedhack_detection[client], count, normal, contrast, median,
+        player_avg_choke[client], shadow_observed[client], others);
+
+    lilac_log_speedhack_shadow(client, sMessage);
+}
+
+/* Learns each player's normal command rate, then judges the seconds over the
+ * limit against it. Only players with real choke are judged, as they are the
+ * ones the choke gate keeps from being banned. Logs only. */
+static void lilac_speedhack_shadow(int client, int count, bool flagged)
+{
+    if (flagged)
+        shadow_last_flag[client] = GetEngineTime();
+
+    if (shadow_observed[client] < SHADOW_LEARN_SECS) {
+        shadow_seed_sum[client] += float(count);
+
+        if (++shadow_observed[client] == SHADOW_LEARN_SECS)
+            shadow_normal[client] = shadow_seed_sum[client] / float(SHADOW_LEARN_SECS);
+
+        return;
+    }
+
+    float normal = shadow_normal[client];
+
+    if (flagged && normal > 0.0 && player_avg_choke[client] >= 0.10) {
+        float contrast = float(count) / normal;
+
+        shadow_contrast[client][shadow_contrast_count[client] % SHADOW_CONTRAST_KEEP] = contrast;
+        shadow_contrast_count[client]++;
+
+        lilac_speedhack_shadow_decide(client, count, normal, contrast);
+    }
+
+    shadow_normal[client] += (float(count) - normal) / SHADOW_MEMORY_SECS;
+    shadow_observed[client]++;
 }
 
 void lilac_speedhack_update_choke(int client)
@@ -136,8 +265,12 @@ public Action timer_check_speedhack(Handle timer)
         /* Count usercmds processed in the last second. */
         int count = lilac_recent_cmd_count(client, now);
 
-        if (float(count) > float(baseline) * SPEEDHACK_CMD_RATIO)
+        bool flagged = (float(count) > float(baseline) * SPEEDHACK_CMD_RATIO);
+
+        if (flagged)
             lilac_detected_speedhack(client, count, baseline);
+
+        lilac_speedhack_shadow(client, count, flagged);
     }
 
     return Plugin_Continue;

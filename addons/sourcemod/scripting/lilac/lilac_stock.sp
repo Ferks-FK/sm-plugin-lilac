@@ -288,6 +288,63 @@ void lilac_log_smooth_telemetry(int client, int sm_n, float sm_cv, float sm_avg_
     CloseHandle(file);
 }
 
+void lilac_log_speedhack_shadow_setup()
+{
+    if (FileExists(speedhack_shadow_log_file, false, NULL_STRING))
+        return;
+
+    Handle file = OpenFile(speedhack_shadow_log_file, "a");
+
+    if (file == null) {
+        PrintToServer("[Lilac] Cannot open speedhack shadow log file.");
+        return;
+    }
+
+    char date[512];
+    FormatTime(date, sizeof(date), dateformat, GetTime());
+
+    WriteFileLine(file, "=========[Notice]=========");
+    WriteFileLine(file, "Speedhack Shadow Log - Little Anti-Cheat %s", PLUGIN_VERSION);
+    WriteFileLine(file, "Created: %s", date);
+    WriteFileLine(file, "");
+    WriteFileLine(file, "This log is for calibration. Nothing here is a detection or a ban.");
+    WriteFileLine(file, "It only covers players with real choke of 10 percent or more, which the speedhack never bans today.");
+    WriteFileLine(file, "Each player is compared with his own normal command rate, learned in his first 30 seconds.");
+    WriteFileLine(file, "WOULD BAN: the per-player rule would have banned this player.");
+    WriteFileLine(file, "not banned: the player went over the limit, but it looks normal for him.");
+    WriteFileLine(file, "Fields: Detection | CmdsPerSec | Normal | Contrast | MedianContrast | AvgChoke | Observed | OthersFlagged");
+    WriteFileLine(file, "OthersFlagged: other players over the limit in the last 3 seconds. Several at once points to a server event, not cheating.");
+    WriteFileLine(file, "");
+
+    CloseHandle(file);
+}
+
+void lilac_log_speedhack_shadow(int client, const char[] message)
+{
+    if (!icvar[CVAR_LOG])
+        return;
+
+    Handle file = OpenFile(speedhack_shadow_log_file, "a");
+
+    if (file == null) {
+        PrintToServer("[Lilac] Cannot open speedhack shadow log file.");
+        return;
+    }
+
+    lilac_log_setup_client(client);
+    Format(line_buffer, sizeof(line_buffer), "%s speedhack shadow: %s", line_buffer, message);
+
+    for (int i = 0; line_buffer[i]; i++) {
+        if (line_buffer[i] == '\n' || line_buffer[i] == 0x0d)
+            line_buffer[i] = '*';
+        else if (line_buffer[i] < 32)
+            line_buffer[i] = '#';
+    }
+
+    WriteFileLine(file, "%s", line_buffer);
+    CloseHandle(file);
+}
+
 void lilac_log_angle_metric(int client, float eu_delta, float tr_delta,
     float eu_total, float tr_total, float eu_final, float tr_final,
     float shot_pitch, int eu_flags, int tr_flags, int ticks)
@@ -340,6 +397,7 @@ That is all, have a wonderful day~\n\n\n", PLUGIN_VERSION);
     }
 
     lilac_log_smooth_telemetry_setup();
+    lilac_log_speedhack_shadow_setup();
 }
 
 void lilac_ban_client(int client, int cheat)

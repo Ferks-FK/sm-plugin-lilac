@@ -256,6 +256,7 @@ char dateformat[512] = "%Y/%m/%d %H:%M:%S";
 char log_file[PLATFORM_MAX_PATH];
 char smooth_telemetry_log_file[PLATFORM_MAX_PATH];
 char angle_metric_log_file[PLATFORM_MAX_PATH];
+char speedhack_shadow_log_file[PLATFORM_MAX_PATH];
 float max_angles[3] = {89.01, 0.0, 50.01};
 Handle forwardhandle = INVALID_HANDLE;
 Handle forwardhandleban = INVALID_HANDLE;
