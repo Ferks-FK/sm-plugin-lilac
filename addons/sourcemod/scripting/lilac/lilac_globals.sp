@@ -18,6 +18,10 @@
 
 #define NATIVE_EXISTS(%0)   (GetFeatureStatus(FeatureType_Native, %0) == FeatureStatus_Available)
 
+/* Log text for a ban, true to what really happens (lilac_ban 0, log only). */
+#define LILAC_BANNED_TEXT(%0)           (lilac_ban_active(%0) ? "was banned" : "would have been banned")
+#define LILAC_DETECTED_BANNED_TEXT(%0)  (lilac_ban_active(%0) ? "was detected and banned" : "would have been banned")
+
 #define CMD_LENGTH   330
 
 #define CVAR_ENABLE                 0
@@ -277,6 +281,7 @@ char log_file[PLATFORM_MAX_PATH];
 char smooth_telemetry_log_file[PLATFORM_MAX_PATH];
 char angle_metric_log_file[PLATFORM_MAX_PATH];
 char speedhack_shadow_log_file[PLATFORM_MAX_PATH];
+char damage_clock_log_file[PLATFORM_MAX_PATH];
 float max_angles[3] = {89.01, 0.0, 50.01};
 Handle forwardhandle = INVALID_HANDLE;
 Handle forwardhandleban = INVALID_HANDLE;

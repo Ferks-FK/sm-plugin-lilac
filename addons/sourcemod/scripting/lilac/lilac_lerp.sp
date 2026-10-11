@@ -114,8 +114,8 @@ static void detected_nolerp(int client, float lerp)
 
 	if (icvar[CVAR_LOG]) {
 		lilac_log_setup_client(client);
-		Format(line_buffer, sizeof(line_buffer), "%s was detected and banned for NoLerp (%s).",
-			line_buffer, sDetails);
+		Format(line_buffer, sizeof(line_buffer), "%s %s for NoLerp (%s).",
+			line_buffer, LILAC_DETECTED_BANNED_TEXT(CHEAT_NOLERP), sDetails);
 
 		lilac_log(true);
 

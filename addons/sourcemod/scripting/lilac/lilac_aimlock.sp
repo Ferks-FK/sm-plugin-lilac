@@ -281,7 +281,7 @@ static void lilac_detected_aimlock(int client, int target, float distance, float
 		if (icvar[CVAR_LOG]) {
 			lilac_log_setup_client(client);
 			Format(line_buffer, sizeof(line_buffer),
-				"%s was banned for Aimlock.", line_buffer);
+				"%s %s for Aimlock.", line_buffer, LILAC_BANNED_TEXT(CHEAT_AIMLOCK));
 
 			lilac_log(true);
 

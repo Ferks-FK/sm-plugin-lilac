@@ -1,8 +1,8 @@
 "Phrases"
 {
+
 	"welcome_msg"
 	{
-		"#format"	"{1:s}"
 		"ro"		"Acest server este protejat de Little Anti-Cheat {1}"
 	}
 
@@ -13,25 +13,12 @@
 
 	"kick_interp_exploit"
 	{
-		"#format"	"{1:.0f},{2:d},{3:.3f}"
 		"ro"		"Exploit detectat: interp-ul tău este prea mare ({1}ms / {2}ms max). Te rog sa îți setezi cl_interp înapoi la {3} sau mai mic"
 	}
 
 	"tban_ping_high"
 	{
-		"#format"	"{1:.0f},{2:d}"
 		"ro"		"Ping-ul tău este prea mare ({1} / {2} max)"
-	}
-
-	"ping_fine_again"
-	{
-		"ro"		"Ping-ul tău pare să fie din nou în regulă, așa că te poți alătura unei echipe și poți juca în siguranță."
-	}
-
-	"ping_kick_warning"
-	{
-		"#format"	"{1:d},{2:.0f},{3:d}"
-		"ro"		"AVERTISMENT: Vei fi dat afară în {1} sec. dacă ping-ul tău rămâne prea mare! ({2} / {3} max)"
 	}
 
 	"kick_ban_generic"
@@ -51,7 +38,6 @@
 
 	"ban_convar"
 	{
-        "#format"	"{1:s}"
 		"ro"		"Invalid ConVar Detectat ({1})"
 	}
 
@@ -82,7 +68,6 @@
 
 	"kick_macro"
 	{
-		"#format"	"{1:s}"
 		"ro"		"{1} Macro nu este permis pe acest server"
 	}
 
@@ -108,7 +93,16 @@
 
 	"admin_chat_warning_generic"
 	{
-		"#format"	"{1:s},{2:s},{3:d}"
 		"ro"		"{1} este suspect de folosire  '{2}' (Detecții: {3})"
+	}
+
+	"ping_fine_again"
+	{
+		"ro"		"Ping-ul tău pare să fie din nou în regulă, așa că te poți alătura unei echipe și poți juca în siguranță."
+	}
+
+	"ping_kick_warning"
+	{
+		"ro"		"AVERTISMENT: Vei fi dat afară în {1} sec. dacă ping-ul tău rămâne prea mare! ({2} / {3} max)"
 	}
 }

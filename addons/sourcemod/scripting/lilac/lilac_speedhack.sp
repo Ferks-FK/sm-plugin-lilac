@@ -335,7 +335,7 @@ static void lilac_detected_speedhack(int client, int cmdcount, int baseline)
         if (icvar[CVAR_LOG]) {
             lilac_log_setup_client(client);
             Format(line_buffer, sizeof(line_buffer),
-                "%s was banned for Speedhack.", line_buffer);
+                "%s %s for Speedhack.", line_buffer, LILAC_BANNED_TEXT(CHEAT_SPEEDHACK));
 
             lilac_log(true);
 
