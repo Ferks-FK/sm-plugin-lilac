@@ -345,6 +345,63 @@ void lilac_log_speedhack_shadow(int client, const char[] message)
     CloseHandle(file);
 }
 
+void lilac_log_damage_clock_setup()
+{
+    if (FileExists(damage_clock_log_file, false, NULL_STRING))
+        return;
+
+    Handle file = OpenFile(damage_clock_log_file, "a");
+
+    if (file == null) {
+        PrintToServer("[Lilac] Cannot open damage clock log file.");
+        return;
+    }
+
+    char date[512];
+    FormatTime(date, sizeof(date), dateformat, GetTime());
+
+    WriteFileLine(file, "=========[Notice]=========");
+    WriteFileLine(file, "Damage Clock Log - Little Anti-Cheat %s", PLUGIN_VERSION);
+    WriteFileLine(file, "Created: %s", date);
+    WriteFileLine(file, "");
+    WriteFileLine(file, "This log is for calibration. Nothing here is a detection or a ban.");
+    WriteFileLine(file, "A line is written when a survivor's damage to a Tank in one second goes over the weapon limit on the real clock.");
+    WriteFileLine(file, "GameClock: damage in 1 second on the player's own game clock (what the survivor damage module uses).");
+    WriteFileLine(file, "RealClock: damage in 1 second of real time.");
+    WriteFileLine(file, "ClockAhead: how far the player's clock is ahead of the server, in seconds.");
+    WriteFileLine(file, "Cmds1s: commands received from the player in the last second (normal is about the tickrate).");
+    WriteFileLine(file, "Fields: Weapon | Threshold | GameClock | RealClock | ClockAhead | Cmds1s | ServerLag | network info");
+    WriteFileLine(file, "");
+
+    CloseHandle(file);
+}
+
+void lilac_log_damage_clock(int client, const char[] message)
+{
+    if (!icvar[CVAR_LOG])
+        return;
+
+    Handle file = OpenFile(damage_clock_log_file, "a");
+
+    if (file == null) {
+        PrintToServer("[Lilac] Cannot open damage clock log file.");
+        return;
+    }
+
+    lilac_log_setup_client(client);
+    Format(line_buffer, sizeof(line_buffer), "%s damage clock: %s", line_buffer, message);
+
+    for (int i = 0; line_buffer[i]; i++) {
+        if (line_buffer[i] == '\n' || line_buffer[i] == 0x0d)
+            line_buffer[i] = '*';
+        else if (line_buffer[i] < 32)
+            line_buffer[i] = '#';
+    }
+
+    WriteFileLine(file, "%s", line_buffer);
+    CloseHandle(file);
+}
+
 void lilac_log_angle_metric(int client, float eu_delta, float tr_delta,
     float eu_total, float tr_total, float eu_final, float tr_final,
     float shot_pitch, int eu_flags, int tr_flags, int ticks)
@@ -398,6 +455,7 @@ That is all, have a wonderful day~\n\n\n", PLUGIN_VERSION);
 
     lilac_log_smooth_telemetry_setup();
     lilac_log_speedhack_shadow_setup();
+    lilac_log_damage_clock_setup();
 }
 
 void lilac_ban_client(int client, int cheat)
