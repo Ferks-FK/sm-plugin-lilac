@@ -181,8 +181,8 @@ static void lilac_ban_bhop(int client)
 	if (icvar[CVAR_LOG]) {
 		lilac_log_setup_client(client);
 		Format(line_buffer, sizeof(line_buffer),
-			"%s was detected and banned for Bhop.",
-			line_buffer);
+			"%s %s for Bhop.",
+			line_buffer, LILAC_DETECTED_BANNED_TEXT(CHEAT_BHOP));
 		lilac_log(true);
 
 		if (icvar[CVAR_LOG_EXTRA])

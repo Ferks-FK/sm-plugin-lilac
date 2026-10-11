@@ -458,28 +458,34 @@ That is all, have a wonderful day~\n\n\n", PLUGIN_VERSION);
     lilac_log_damage_clock_setup();
 }
 
+/* True when a detection of this cheat ends in a ban. */
+bool lilac_ban_active(int cheat)
+{
+	/* Banning has been disabled. */
+	if (!icvar[CVAR_BAN])
+		return false;
+
+	/* Log only mode of the module, in which case, don't ban. */
+	switch (cheat) {
+	case CHEAT_ANGLES: { return icvar[CVAR_ANGLES] >= 0; }
+	case CHEAT_CHATCLEAR: { return icvar[CVAR_CHAT] >= 0; }
+	case CHEAT_CONVAR: { return icvar[CVAR_CONVAR] >= 0; }
+	case CHEAT_NOLERP: { return icvar[CVAR_NOLERP] >= 0; }
+	case CHEAT_BHOP: { return icvar[CVAR_BHOP] >= 0; }
+	case CHEAT_MACRO: { return icvar[CVAR_MACRO] >= 0; }
+	case CHEAT_NEWLINE_NAME: { return icvar[CVAR_FILTER_NAME] >= 0; }
+	}
+
+	return true;
+}
+
 void lilac_ban_client(int client, int cheat)
 {
 	char reason[128];
 	int lang = LANG_SERVER;
-	bool log_only = false;
 
-	/* Banning has been disabled, don't forward the ban and don't ban. */
-	if (!icvar[CVAR_BAN])
-		return;
-
-	/* Check if log only mode has been enabled, in which case, don't ban. */
-	switch (cheat) {
-	case CHEAT_ANGLES: { log_only = icvar[CVAR_ANGLES] < 0; }
-	case CHEAT_CHATCLEAR: { log_only = icvar[CVAR_CHAT] < 0; }
-	case CHEAT_CONVAR: { log_only = icvar[CVAR_CONVAR] < 0; }
-	case CHEAT_NOLERP: { log_only = icvar[CVAR_NOLERP] < 0; }
-	case CHEAT_BHOP: { log_only = icvar[CVAR_BHOP] < 0; }
-	case CHEAT_MACRO: { log_only = icvar[CVAR_MACRO] < 0; }
-	case CHEAT_NEWLINE_NAME: { log_only = icvar[CVAR_FILTER_NAME] < 0; }
-	}
-
-	if (log_only)
+	/* Banning is disabled or log only, don't forward the ban and don't ban. */
+	if (!lilac_ban_active(cheat))
 		return;
 
 	if (icvar[CVAR_BAN_LANGUAGE])

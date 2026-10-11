@@ -189,7 +189,7 @@ static void lilac_infected_damage_flag(int attacker, int victim, int zclass, int
 		{
 			lilac_log_setup_client(attacker);
 			Format(line_buffer, sizeof(line_buffer),
-				"%s was banned for using an infected damage exploit.", line_buffer);
+				"%s %s for using an infected damage exploit.", line_buffer, LILAC_BANNED_TEXT(CHEAT_INFECTED_DMG));
 
 			lilac_log(true);
 

@@ -70,8 +70,8 @@ static void lilac_detected_angles(int client, float ang[3])
 	if (icvar[CVAR_LOG]) {
 		lilac_log_setup_client(client);
 		Format(line_buffer, sizeof(line_buffer),
-			"%s was detected and banned for Angle-Cheats (%s).",
-			line_buffer, sDetails);
+			"%s %s for Angle-Cheats (%s).",
+			line_buffer, LILAC_DETECTED_BANNED_TEXT(CHEAT_ANGLES), sDetails);
 
 		lilac_log(true);
 
