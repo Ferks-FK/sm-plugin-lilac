@@ -537,7 +537,7 @@ static void lilac_detected_aimbot(int client, float delta, float td, int flags, 
         if (icvar[CVAR_LOG]) {
             lilac_log_setup_client(client);
             Format(line_buffer, sizeof(line_buffer),
-                "%s was banned for Aimbot.", line_buffer);
+                "%s %s for Aimbot.", line_buffer, LILAC_BANNED_TEXT(CHEAT_AIMBOT));
 
             lilac_log(true);
 

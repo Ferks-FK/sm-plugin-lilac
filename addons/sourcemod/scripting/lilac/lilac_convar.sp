@@ -282,8 +282,8 @@ public void query_reply(QueryCookie cookie, int client, ConVarQueryResult result
                 line_buffer, sDetails);
         else if (icvar[CVAR_CONVAR] == 2)
             Format(line_buffer, sizeof(line_buffer),
-                "%s was detected and banned for an invalid ConVar (%s).",
-                line_buffer, sDetails);
+                "%s %s for an invalid ConVar (%s).",
+                line_buffer, LILAC_DETECTED_BANNED_TEXT(CHEAT_CONVAR), sDetails);
 
         lilac_log(true);
 

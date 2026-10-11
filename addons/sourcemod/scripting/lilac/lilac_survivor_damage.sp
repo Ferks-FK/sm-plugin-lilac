@@ -280,7 +280,7 @@ static void lilac_survivor_damage_flag(int attacker, int victim, const char[] we
 		{
 			lilac_log_setup_client(attacker);
 			Format(line_buffer, sizeof(line_buffer),
-				"%s was banned for using a survivor damage exploit.", line_buffer);
+				"%s %s for using a survivor damage exploit.", line_buffer, LILAC_BANNED_TEXT(CHEAT_SURVIVOR_DMG));
 
 			lilac_log(true);
 
