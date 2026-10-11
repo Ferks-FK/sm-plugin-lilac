@@ -16,19 +16,139 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#define INF_DMG_WINDOW      1.0   /* Rolling window in seconds. */
-#define INF_DMG_BUF_SIZE    128    /* Ring buffer slots per player. */
+#define INF_DMG_BUF_SIZE    128
+#define INF_DMG_MAX_FACTOR  4.0
 
-/* Maximum damage per INF_DMG_WINDOW before flagging, indexed by zombie class.
- * 0 disables detection for that class. */
-static const int inf_dmg_threshold[9] = {0, 15, 0, 45, 60, 20, 50, 0, 72};
+/* Max damage in one second, by zombie class. 0 disables the class. */
+static const int inf_dmg_threshold[9] = {0, 15, 0, 35, 60, 10, 40, 0, 60};
+
+/* Damage cvars of the server, with the value they had when the limits above
+ * were measured. If one is raised, the limit of its class goes up by the
+ * same ratio. */
+static const char inf_dmg_cvar_name[][] = {
+	"tongue_choke_damage_amount", "tongue_drag_damage_amount", "smoker_pz_claw_dmg",
+	"z_pounce_damage", "z_hunter_max_pounce_bonus_damage", "hunter_pz_claw_dmg",
+	"z_jockey_ride_damage", "z_jockey_ride_damage_interval", "jockey_pz_claw_dmg",
+	"z_charger_pound_dmg", "z_charge_max_damage", "charger_pz_claw_dmg",
+	"vs_tank_damage"
+};
+
+static const float inf_dmg_cvar_ref[] = {
+	5.0, 3.0, 4.0,
+	5.0, 24.0, 6.0,
+	2.0, 0.5, 4.0,
+	15.0, 10.0, 10.0,
+	24.0
+};
+
+static const int inf_dmg_cvar_class[] = {
+	1, 1, 1,
+	3, 3, 3,
+	5, 5, 5,
+	6, 6, 6,
+	8
+};
+
+/* Intervals: smaller means more damage. */
+static const bool inf_dmg_cvar_interval[] = {
+	false, false, false,
+	false, false, false,
+	false, true, false,
+	false, false, false,
+	false
+};
+
+static const char inf_dmg_class_name[9][] = {
+	"None", "Smoker", "Boomer", "Hunter", "Spitter", "Jockey", "Charger", "Witch", "Tank"
+};
+
+static ConVar inf_dmg_cvar_handle[13];
+static bool   inf_dmg_cvars_found = false;
+static float  inf_dmg_last_factor[9];
+
+static void lilac_infected_damage_find_cvars()
+{
+	if (inf_dmg_cvars_found)
+		return;
+
+	inf_dmg_cvars_found = true;
+
+	for (int i = 0; i < sizeof(inf_dmg_cvar_name); i++)
+		inf_dmg_cvar_handle[i] = FindConVar(inf_dmg_cvar_name[i]);
+}
+
+/* How much the cvars of this class are above the measured values. */
+static float lilac_infected_damage_factor(int zclass)
+{
+	float factor = 1.0;
+
+	lilac_infected_damage_find_cvars();
+
+	for (int i = 0; i < sizeof(inf_dmg_cvar_name); i++) {
+		if (inf_dmg_cvar_class[i] != zclass || inf_dmg_cvar_handle[i] == null)
+			continue;
+
+		float live = inf_dmg_cvar_handle[i].FloatValue;
+
+		if (live <= 0.0)
+			continue;
+
+		float ratio = inf_dmg_cvar_interval[i]
+			? (inf_dmg_cvar_ref[i] / live)
+			: (live / inf_dmg_cvar_ref[i]);
+
+		if (ratio > factor)
+			factor = ratio;
+	}
+
+	return (factor > INF_DMG_MAX_FACTOR) ? INF_DMG_MAX_FACTOR : factor;
+}
 
 static int lilac_inf_threshold(int zclass)
 {
-	return (zclass >= 1 && zclass <= 8) ? inf_dmg_threshold[zclass] : 0;
+	if (zclass < 1 || zclass > 8 || inf_dmg_threshold[zclass] == 0)
+		return 0;
+
+	float factor = lilac_infected_damage_factor(zclass);
+	int limit = RoundToCeil(float(inf_dmg_threshold[zclass]) * factor);
+
+	/* Log when the limit of a class changes. */
+	if (FloatAbs(factor - inf_dmg_last_factor[zclass]) > 0.01) {
+		inf_dmg_last_factor[zclass] = factor;
+
+		if (icvar[CVAR_LOG]) {
+			char date[64];
+
+			FormatTime(date, sizeof(date), dateformat, GetTime());
+			FormatEx(line_buffer, sizeof(line_buffer),
+				"%s [Version %s] Infected damage limit of %s is %d (damage cvars x%.2f).",
+				date, PLUGIN_VERSION, inf_dmg_class_name[zclass], limit, factor);
+
+			lilac_log(false);
+		}
+	}
+
+	return limit;
 }
 
-static float inf_dmg_time       [MAXPLAYERS + 1][INF_DMG_BUF_SIZE];
+/* For the status command. */
+void lilac_infected_damage_print_limits()
+{
+	PrintToServer("Infected damage limits (damage in one second):");
+
+	for (int zclass = 1; zclass <= 8; zclass++) {
+		if (inf_dmg_threshold[zclass] == 0)
+			continue;
+
+		float factor = lilac_infected_damage_factor(zclass);
+
+		PrintToServer("\t%s: %d (measured %d, damage cvars x%.2f)",
+			inf_dmg_class_name[zclass], RoundToCeil(float(inf_dmg_threshold[zclass]) * factor),
+			inf_dmg_threshold[zclass], factor);
+	}
+}
+
+static int   inf_dmg_tick       [MAXPLAYERS + 1][INF_DMG_BUF_SIZE];
 static int   inf_dmg_amount     [MAXPLAYERS + 1][INF_DMG_BUF_SIZE];
 static int   inf_dmg_head       [MAXPLAYERS + 1];
 static int   inf_dmg_detections [MAXPLAYERS + 1];
@@ -42,7 +162,7 @@ void lilac_infected_damage_reset_client(int client)
 
 	for (int i = 0; i < INF_DMG_BUF_SIZE; i++)
 	{
-		inf_dmg_time  [client][i] = 0.0;
+		inf_dmg_tick  [client][i] = 0;
 		inf_dmg_amount[client][i] = 0;
 	}
 }
@@ -79,34 +199,33 @@ public Action event_player_hurt(Event event, const char[] name, bool dontBroadca
     if (threshold == 0)
         return Plugin_Continue;
 
-    /* Skip hits that share a game tick with the previous recorded hit.
-    * A single punch/swing can hit multiple survivors simultaneously (same tick),
-    * which would multiply the damage count unfairly. Burst attacks via tickbase
-    * manipulation are intercepted before reaching this point by lilac_tickbase_fix. */
+    /* One swing can hit several survivors in the same tick, count it once. */
     int current_tick = GetGameTickCount();
     if (current_tick == inf_dmg_last_tick[attacker])
         return Plugin_Continue;
     inf_dmg_last_tick[attacker] = current_tick;
 
-    /* Tank: skip single hits above max punch damage — thrown objects cause much higher damage. */
-    if (zclass == L4D2_ZC_TANK && damage > 30)
+    if (tick_rate <= 0)
         return Plugin_Continue;
 
-    /* Store this hit in the ring buffer. */
-    float now = GetGameTime();
-    int   slot = inf_dmg_head[attacker];
+    /* Tank: thrown objects hit much harder than a punch, skip them. */
+    if (zclass == L4D2_ZC_TANK
+        && damage > RoundToCeil(30.0 * lilac_infected_damage_factor(zclass)))
+        return Plugin_Continue;
 
-    inf_dmg_time  [attacker][slot] = now;
+    int slot = inf_dmg_head[attacker];
+
+    inf_dmg_tick  [attacker][slot] = current_tick;
     inf_dmg_amount[attacker][slot] = damage;
     inf_dmg_head  [attacker]       = (slot + 1) % INF_DMG_BUF_SIZE;
 
-    /* Sum all hits that fall inside the rolling window. */
+    /* Damage of the last second. */
     int total = 0;
 
     for (int i = 0; i < INF_DMG_BUF_SIZE; i++)
     {
-        if (inf_dmg_time[attacker][i] > 0.0
-            && now - inf_dmg_time[attacker][i] <= INF_DMG_WINDOW)
+        if (inf_dmg_tick[attacker][i] > 0
+            && current_tick - inf_dmg_tick[attacker][i] <= tick_rate)
         {
             total += inf_dmg_amount[attacker][i];
         }
@@ -126,7 +245,7 @@ static void lilac_infected_damage_flag(int attacker, int victim, int zclass, int
 	/* Reset the window after flagging so a single burst doesn't keep firing. */
 	for (int i = 0; i < INF_DMG_BUF_SIZE; i++)
 	{
-		inf_dmg_time  [attacker][i] = 0.0;
+		inf_dmg_tick  [attacker][i] = 0;
 		inf_dmg_amount[attacker][i] = 0;
 	}
 
@@ -136,16 +255,7 @@ static void lilac_infected_damage_flag(int attacker, int victim, int zclass, int
 	++inf_dmg_detections[attacker];
 
 	char class_name[16];
-	switch (zclass)
-	{
-		case L4D2_ZC_SMOKER:  strcopy(class_name, sizeof(class_name), "Smoker");
-		case L4D2_ZC_HUNTER:  strcopy(class_name, sizeof(class_name), "Hunter");
-		case L4D2_ZC_SPITTER: strcopy(class_name, sizeof(class_name), "Spitter");
-		case L4D2_ZC_JOCKEY:  strcopy(class_name, sizeof(class_name), "Jockey");
-		case L4D2_ZC_CHARGER: strcopy(class_name, sizeof(class_name), "Charger");
-		case L4D2_ZC_TANK:    strcopy(class_name, sizeof(class_name), "Tank");
-		default:              strcopy(class_name, sizeof(class_name), "Unknown");
-	}
+	strcopy(class_name, sizeof(class_name), inf_dmg_class_name[zclass]);
 
 	char sDetails[256];
 	Format(sDetails, sizeof(sDetails),

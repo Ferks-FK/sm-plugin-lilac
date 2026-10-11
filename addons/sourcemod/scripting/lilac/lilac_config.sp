@@ -376,6 +376,9 @@ public Action lilac_ban_status(int args)
     PrintToServer("\tNative Exists: %s", ((NATIVE_EXISTS("AR_GetMatchID")) ? "Yes" : "No"));
     PrintToServer("\tConVar: lilac_autorecorder = %d", icvar[CVAR_AR]);
 
+    if (g_bGame == Engine_Left4Dead2)
+        lilac_infected_damage_print_limits();
+
     PrintToServer("Material-Admin:");
     PrintToServer("\tLoaded: %s", ((LibraryExists("materialadmin")) ? "Yes" : "No"));
     PrintToServer("\tNative Exists: %s", ((NATIVE_EXISTS("MABanPlayer")) ? "Yes" : "No"));
