@@ -145,6 +145,20 @@ void lilac_log_setup_client(int client)
 		date, PLUGIN_VERSION, client, steamid, ip, matchid_part);
 }
 
+/* Tick of the running SourceTV demo, or -1 when there is none. */
+static int lilac_demo_tick()
+{
+	if (!NATIVE_EXISTS("SourceTV_IsActive")
+		|| !NATIVE_EXISTS("SourceTV_IsRecording")
+		|| !NATIVE_EXISTS("SourceTV_GetRecordingTick"))
+		return -1;
+
+	if (!SourceTV_IsActive() || !SourceTV_IsRecording())
+		return -1;
+
+	return SourceTV_GetRecordingTick();
+}
+
 void lilac_log_extra(int client)
 {
 	float pos[3], ang[3];
@@ -159,7 +173,7 @@ void lilac_log_extra(int client)
 	 * lilac_network_format(), instead of raw 0-1 fractions at the default
 	 * 6 decimal places. */
 	FormatEx(line_buffer, sizeof(line_buffer),
-		"\tTick={%d}, Pos={%.0f,%.0f,%.0f}, Angles={%.5f,%.5f,%.5f}, Map=\"%s\", Team={%d}, Weapon=\"%s\", Latency={Inc:%.1f,Out:%.1f}, Loss={Inc:%.1f,Out:%.1f}, Choke={Inc:%.1f,Out:%.1f}, ConnectionTime={%.1f seconds}, GameTime={%.1f seconds}",
+		"\tServerTick={%d}, Pos={%.0f,%.0f,%.0f}, Angles={%.5f,%.5f,%.5f}, Map=\"%s\", Team={%d}, Weapon=\"%s\", Latency={Inc:%.1f,Out:%.1f}, Loss={Inc:%.1f,Out:%.1f}, Choke={Inc:%.1f,Out:%.1f}, ConnectionTime={%.1f seconds}, GameTime={%.1f seconds}",
 		GetGameTickCount(),
 		pos[0], pos[1], pos[2],
 		ang[0], ang[1], ang[2],
@@ -171,6 +185,13 @@ void lilac_log_extra(int client)
 		GetClientAvgChoke(client, NetFlow_Incoming) * 100.0,
 		GetClientAvgChoke(client, NetFlow_Outgoing) * 100.0,
 		GetClientTime(client), GetGameTime());
+
+	/* Where to jump in the SourceTV demo. */
+	int demo_tick = lilac_demo_tick();
+
+	if (demo_tick >= 0)
+		Format(line_buffer, sizeof(line_buffer),
+			"%s, DemoTick={%d}", line_buffer, demo_tick);
 
 	lilac_log(false);
 }

@@ -328,3 +328,8 @@ native Function MABanPlayer(int iClient, int iTarget, int iType, int iTime, char
 native Function SBBanPlayer(int client, int target, int time, const char[] reason);
 native Function SBPP_BanPlayer(int iAdmin, int iTarget, int iTime, const char[] sReason);
 native bool AR_GetMatchID(char[] matchID, int maxlen);
+
+/* Optional, from the SourceTV Manager extension. */
+native bool SourceTV_IsActive();
+native bool SourceTV_IsRecording();
+native int SourceTV_GetRecordingTick();

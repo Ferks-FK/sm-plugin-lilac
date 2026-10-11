@@ -84,6 +84,9 @@ public APLRes AskPluginLoad2(Handle hMyself, bool bLate, char[] sError, int err_
         MarkNativeAsOptional("MABanPlayer");
         MarkNativeAsOptional("IRC_MsgFlaggedChannels");
         MarkNativeAsOptional("AR_GetMatchID");
+        MarkNativeAsOptional("SourceTV_IsActive");
+        MarkNativeAsOptional("SourceTV_IsRecording");
+        MarkNativeAsOptional("SourceTV_GetRecordingTick");
 
         /* Build the log path for the file in case the user has overridden sm_basepath. */
         BuildPath(Path_SM, log_file, sizeof(log_file), "logs/lilac.log");
