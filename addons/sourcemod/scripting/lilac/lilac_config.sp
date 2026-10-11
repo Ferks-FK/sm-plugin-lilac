@@ -376,6 +376,9 @@ public Action lilac_ban_status(int args)
     PrintToServer("\tNative Exists: %s", ((NATIVE_EXISTS("AR_GetMatchID")) ? "Yes" : "No"));
     PrintToServer("\tConVar: lilac_autorecorder = %d", icvar[CVAR_AR]);
 
+    PrintToServer("SourceTV Manager (demo tick in logs):");
+    PrintToServer("\tNative Exists: %s", ((NATIVE_EXISTS("SourceTV_GetRecordingTick")) ? "Yes" : "No"));
+
     PrintToServer("Material-Admin:");
     PrintToServer("\tLoaded: %s", ((LibraryExists("materialadmin")) ? "Yes" : "No"));
     PrintToServer("\tNative Exists: %s", ((NATIVE_EXISTS("MABanPlayer")) ? "Yes" : "No"));
