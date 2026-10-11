@@ -376,6 +376,9 @@ public Action lilac_ban_status(int args)
     PrintToServer("\tNative Exists: %s", ((NATIVE_EXISTS("AR_GetMatchID")) ? "Yes" : "No"));
     PrintToServer("\tConVar: lilac_autorecorder = %d", icvar[CVAR_AR]);
 
+    PrintToServer("SourceTV Manager (demo tick in logs):");
+    PrintToServer("\tNative Exists: %s", ((NATIVE_EXISTS("SourceTV_GetRecordingTick")) ? "Yes" : "No"));
+
     if (g_bGame == Engine_Left4Dead2)
         lilac_infected_damage_print_limits();
 
