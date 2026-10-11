@@ -1,5 +1,6 @@
 "Phrases"
 {
+
 	"welcome_msg"
 	{
 		"pl"		"Ten serwer jest chroniony przez Little Anti-Cheat {1}"
@@ -20,16 +21,6 @@
 		"pl"		"Twój ping jest za wysoki ({1} / {2} maks)"
 	}
 
-	"ping_fine_again"
-	{
-		"pl"		"Twój ping wygląda już w porządku, możesz bezpiecznie dołączyć do drużyny i grać."
-	}
-
-	"ping_kick_warning"
-	{
-		"pl"		"OSTRZEŻENIE: Zostaniesz wyrzucony z serwera za {1} sekund, jeśli Twój ping nadal będzie za wysoki! ({2} / {3} maks)"
-	}
-
 	"kick_ban_generic"
 	{
 		"pl"		"Zostałeś zbanowany na tym serwerze"
@@ -47,8 +38,12 @@
 
 	"ban_convar"
 	{
-        "#format"	"{1:s}"
 		"pl"		"Wykryto Nieprawidłowy ConVar ({1})"
+	}
+
+	"ban_nolerp"
+	{
+		"pl"		"Wykryto NoLerp"
 	}
 
 	"ban_bhop"
@@ -64,5 +59,50 @@
 	"ban_aimlock"
 	{
 		"pl"		"Wykryto Aimlock"
+	}
+
+	"ban_macro"
+	{
+		"pl"		"Wykryto makro"
+	}
+
+	"kick_macro"
+	{
+		"pl"		"Makro {1} jest niedozwolone na tym serwerze"
+	}
+
+	"chat_invalid_characters"
+	{
+		"pl"		"Twoja wiadomość została zablokowana (Powód: Nieprawidłowe znaki)."
+	}
+
+	"chat_wide_char_spam"
+	{
+		"pl"		"Twoja wiadomość została zablokowana (Powód: Spam szerokimi znakami)."
+	}
+
+	"kick_bad_name"
+	{
+		"pl"		"Twoja nazwa zawiera nieprawidłowe znaki, zmień ją"
+	}
+
+	"ban_name_newline"
+	{
+		"pl"		"Wykryto znaki nowej linii w nazwie"
+	}
+
+	"admin_chat_warning_generic"
+	{
+		"pl"		"{1} jest podejrzany o używanie '{2}' (Wykrycia: {3})"
+	}
+
+	"ping_fine_again"
+	{
+		"pl"		"Twój ping wygląda już w porządku, możesz bezpiecznie dołączyć do drużyny i grać."
+	}
+
+	"ping_kick_warning"
+	{
+		"pl"		"OSTRZEŻENIE: Zostaniesz wyrzucony z serwera za {1} sekund, jeśli Twój ping nadal będzie za wysoki! ({2} / {3} maks)"
 	}
 }
