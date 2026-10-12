@@ -19,8 +19,9 @@
 #define INF_DMG_BUF_SIZE    128
 #define INF_DMG_MAX_FACTOR  4.0
 
-/* Max damage in one second, by zombie class. 0 disables the class. */
-static const int inf_dmg_threshold[9] = {0, 15, 0, 35, 60, 10, 40, 0, 60};
+/* Max damage one survivor can take from one infected in one second, by
+ * zombie class. 0 disables the class. */
+static const int inf_dmg_threshold[9] = {0, 15, 0, 50, 60, 10, 40, 0, 60};
 
 /* Damage cvars of the server, with the value they had when the limits above
  * were measured. If one is raised, the limit of its class goes up by the
@@ -72,6 +73,9 @@ static void lilac_infected_damage_find_cvars()
 		return;
 
 	inf_dmg_cvars_found = true;
+
+	for (int i = 0; i < sizeof(inf_dmg_last_factor); i++)
+		inf_dmg_last_factor[i] = 1.0;
 
 	for (int i = 0; i < sizeof(inf_dmg_cvar_name); i++)
 		inf_dmg_cvar_handle[i] = FindConVar(inf_dmg_cvar_name[i]);
@@ -150,15 +154,14 @@ void lilac_infected_damage_print_limits()
 
 static int   inf_dmg_tick       [MAXPLAYERS + 1][INF_DMG_BUF_SIZE];
 static int   inf_dmg_amount     [MAXPLAYERS + 1][INF_DMG_BUF_SIZE];
+static int   inf_dmg_victim     [MAXPLAYERS + 1][INF_DMG_BUF_SIZE];
 static int   inf_dmg_head       [MAXPLAYERS + 1];
 static int   inf_dmg_detections [MAXPLAYERS + 1];
-static int   inf_dmg_last_tick  [MAXPLAYERS + 1];
 
 void lilac_infected_damage_reset_client(int client)
 {
 	inf_dmg_head[client]       = 0;
 	inf_dmg_detections[client] = 0;
-	inf_dmg_last_tick[client]  = -1;
 
 	for (int i = 0; i < INF_DMG_BUF_SIZE; i++)
 	{
@@ -199,12 +202,6 @@ public Action event_player_hurt(Event event, const char[] name, bool dontBroadca
     if (threshold == 0)
         return Plugin_Continue;
 
-    /* One swing can hit several survivors in the same tick, count it once. */
-    int current_tick = GetGameTickCount();
-    if (current_tick == inf_dmg_last_tick[attacker])
-        return Plugin_Continue;
-    inf_dmg_last_tick[attacker] = current_tick;
-
     if (tick_rate <= 0)
         return Plugin_Continue;
 
@@ -213,31 +210,48 @@ public Action event_player_hurt(Event event, const char[] name, bool dontBroadca
         && damage > RoundToCeil(30.0 * lilac_infected_damage_factor(zclass)))
         return Plugin_Continue;
 
+    /* Damage this victim took in the last second. Hits on other survivors
+     * don't count, so one swing on several of them is not several swings. */
+    int current_tick = GetGameTickCount();
+    int total = damage;
+    int hits  = 1;
+
+    for (int i = 0; i < INF_DMG_BUF_SIZE; i++)
+    {
+        if (inf_dmg_tick[attacker][i] <= 0 || inf_dmg_victim[attacker][i] != victim)
+            continue;
+
+        int age = current_tick - inf_dmg_tick[attacker][i];
+
+        if (age == 0)
+            return Plugin_Continue;
+
+        if (age > 0 && age <= tick_rate)
+        {
+            total += inf_dmg_amount[attacker][i];
+            hits++;
+        }
+    }
+
     int slot = inf_dmg_head[attacker];
 
     inf_dmg_tick  [attacker][slot] = current_tick;
     inf_dmg_amount[attacker][slot] = damage;
+    inf_dmg_victim[attacker][slot] = victim;
     inf_dmg_head  [attacker]       = (slot + 1) % INF_DMG_BUF_SIZE;
 
-    /* Damage of the last second. */
-    int total = 0;
-
-    for (int i = 0; i < INF_DMG_BUF_SIZE; i++)
-    {
-        if (inf_dmg_tick[attacker][i] > 0
-            && current_tick - inf_dmg_tick[attacker][i] <= tick_rate)
-        {
-            total += inf_dmg_amount[attacker][i];
-        }
-    }
-
     if (total > threshold)
-        lilac_infected_damage_flag(attacker, victim, zclass, total, damage, threshold);
+    {
+        char weapon[32];
+        GetEventString(event, "weapon", weapon, sizeof(weapon));
+
+        lilac_infected_damage_flag(attacker, victim, zclass, total, damage, threshold, hits, weapon);
+    }
 
     return Plugin_Continue;
 }
 
-static void lilac_infected_damage_flag(int attacker, int victim, int zclass, int total, int last_hit, int threshold)
+static void lilac_infected_damage_flag(int attacker, int victim, int zclass, int total, int last_hit, int threshold, int hits, const char[] weapon)
 {
 	if (lilac_forward_allow_cheat_detection(attacker, CHEAT_INFECTED_DMG) == false)
 		return;
@@ -259,9 +273,9 @@ static void lilac_infected_damage_flag(int attacker, int victim, int zclass, int
 
 	char sDetails[256];
 	Format(sDetails, sizeof(sDetails),
-		"Detection: %d | Class: %s | DmgInWindow: %d | Threshold: %d | LastHit: %d | Victim: %N",
+		"Detection: %d | Class: %s | DmgInWindow: %d | Threshold: %d | LastHit: %d | Hits: %d | Weapon: %s | Victim: %N",
 		inf_dmg_detections[attacker], class_name, total,
-		threshold, last_hit, victim);
+		threshold, last_hit, hits, weapon, victim);
 
 	lilac_save_player_details(attacker, sDetails);
 	lilac_forward_client_cheat(attacker, CHEAT_INFECTED_DMG);
