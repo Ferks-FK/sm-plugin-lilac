@@ -18,6 +18,9 @@
 
 // ===== Constants =====
 #define SPEEDHACK_NET_VETO_GRACE     20.0    // Seconds to keep suppressing after the network veto clears
+#define SPEEDHACK_PAUSE_TAIL         3.0     // Seconds to keep skipping after a paused game resumes.
+#define SPEEDHACK_CMDNUM_RATIO       1.5     // Command numbers per second must reach this x baseline.
+#define SPEEDHACK_IGNORED_COOLDOWN   30.0    // Seconds between "ignored" lines per player.
 
 // Shadow mode: only logs what a per-player rule would decide.
 #define SHADOW_LEARN_SECS            30      // Seconds spent learning a player's normal.
@@ -51,11 +54,30 @@ static bool g_bMaxCmdrateChecked = false;
 // Game time seen on the previous check, to detect the game being paused.
 static float g_flLastSpeedhackClock = -1.0;
 
+// Engine time until which checks are skipped after a pause.
+static float g_flSpeedhackPauseUntil = 0.0;
+
+// Command numbers the client sent, to tell a real flood from a stalled clock.
+static int   player_cmdnum_last[MAXPLAYERS + 1];
+static int   player_cmdnum_repeats[MAXPLAYERS + 1];
+static int   player_cmdnum_prev[MAXPLAYERS + 1];
+static float player_cmdnum_time[MAXPLAYERS + 1];
+static int   player_cmdnum_rate[MAXPLAYERS + 1];
+static int   player_cmdnum_dups[MAXPLAYERS + 1];
+static float player_ignored_note[MAXPLAYERS + 1];
+
 void lilac_speedhack_reset_client(int client)
 {
     speedhack_detection[client] = 0;
     player_avg_choke[client] = 0.0;
     player_last_vetoed[client] = 0.0;
+    player_cmdnum_last[client] = 0;
+    player_cmdnum_repeats[client] = 0;
+    player_cmdnum_prev[client] = 0;
+    player_cmdnum_time[client] = 0.0;
+    player_cmdnum_rate[client] = -1;
+    player_cmdnum_dups[client] = 0;
+    player_ignored_note[client] = 0.0;
 
     shadow_normal[client] = 0.0;
     shadow_seed_sum[client] = 0.0;
@@ -172,6 +194,34 @@ static void lilac_speedhack_shadow(int client, int count, bool flagged)
     shadow_observed[client]++;
 }
 
+/* Called for every command the player runs. */
+void lilac_speedhack_cmd(int client, int cmdnum)
+{
+    if (cmdnum == player_cmdnum_last[client])
+        player_cmdnum_repeats[client]++;
+
+    player_cmdnum_last[client] = cmdnum;
+}
+
+/* Command numbers per real second, over the time since the previous check. */
+static void lilac_speedhack_sample_cmdnum(int client)
+{
+    float now = GetEngineTime();
+    float dt = now - player_cmdnum_time[client];
+    int delta = player_cmdnum_last[client] - player_cmdnum_prev[client];
+
+    if (player_cmdnum_time[client] > 0.0 && dt > 0.2 && delta >= 0)
+        player_cmdnum_rate[client] = RoundToNearest(float(delta) / dt);
+    else
+        player_cmdnum_rate[client] = -1;
+
+    player_cmdnum_dups[client] = player_cmdnum_repeats[client];
+    player_cmdnum_repeats[client] = 0;
+
+    player_cmdnum_prev[client] = player_cmdnum_last[client];
+    player_cmdnum_time[client] = now;
+}
+
 void lilac_speedhack_update_choke(int client)
 {
     float choke = GetClientAvgChoke(client, NetFlow_Incoming);
@@ -209,11 +259,17 @@ public Action timer_check_speedhack(Handle timer)
      * while paused. */
     if (now == g_flLastSpeedhackClock) {
         g_flLastSpeedhackClock = now;
+        g_flSpeedhackPauseUntil = GetEngineTime() + SPEEDHACK_PAUSE_TAIL;
 
         return Plugin_Continue;
     }
 
     g_flLastSpeedhackClock = now;
+
+    /* The commands of the pause still sit inside the 1 s window for a
+     * moment after the clock moves again. */
+    if (GetEngineTime() < g_flSpeedhackPauseUntil)
+        return Plugin_Continue;
 
     int baseline = tick_rate;
     if (!g_bMaxCmdrateChecked) {
@@ -233,6 +289,7 @@ public Action timer_check_speedhack(Handle timer)
         /* Update unconditionally so it's primed by the time the grace
          * period below needs to read it, same reasoning as before. */
         lilac_speedhack_update_choke(client);
+        lilac_speedhack_sample_cmdnum(client);
 
         bool vetoed = lilac_network_vetoed(client);
         if (vetoed)
@@ -267,13 +324,45 @@ public Action timer_check_speedhack(Handle timer)
 
         bool flagged = (float(count) > float(baseline) * SPEEDHACK_CMD_RATIO);
 
-        if (flagged)
+        /* The count can be inflated without the client sending more commands
+         * (a paused clock piles every stamp on one value). The command
+         * numbers it sent per real second are not, so they must agree. */
+        if (flagged && lilac_speedhack_cmdnum_disagrees(client, baseline))
+            lilac_speedhack_log_ignored(client, count, baseline);
+        else if (flagged)
             lilac_detected_speedhack(client, count, baseline);
 
         lilac_speedhack_shadow(client, count, flagged);
     }
 
     return Plugin_Continue;
+}
+
+/* True when the command numbers show a normal rate. No data, no veto. */
+static bool lilac_speedhack_cmdnum_disagrees(int client, int baseline)
+{
+    if (player_cmdnum_rate[client] < 0)
+        return false;
+
+    return float(player_cmdnum_rate[client]) < float(baseline) * SPEEDHACK_CMDNUM_RATIO;
+}
+
+static void lilac_speedhack_log_ignored(int client, int count, int baseline)
+{
+    float now = GetEngineTime();
+
+    if (!icvar[CVAR_LOG] || now - player_ignored_note[client] < SPEEDHACK_IGNORED_COOLDOWN)
+        return;
+
+    player_ignored_note[client] = now;
+
+    lilac_log_setup_client(client);
+    Format(line_buffer, sizeof(line_buffer),
+        "%s speedhack count ignored, command numbers are normal (CmdsPerSec: %d | CmdnumRate: %d | Dups: %d | ExpectedMax: ~%d).",
+        line_buffer, count, player_cmdnum_rate[client], player_cmdnum_dups[client],
+        RoundToFloor(float(baseline) * SPEEDHACK_CMD_RATIO));
+
+    lilac_log(true);
 }
 
 static void lilac_detected_speedhack(int client, int cmdcount, int baseline)
@@ -292,12 +381,18 @@ static void lilac_detected_speedhack(int client, int cmdcount, int baseline)
     char sNet[192];
     lilac_network_format(client, sNet, sizeof(sNet));
 
-    char sDetails[384];
+    /* Where the player's clock is relative to the server, in ticks. */
+    float ahead = playerinfo_time_usercmd[client][playerinfo_index[client]]
+        - float(GetGameTickCount()) * GetTickInterval();
+
+    char sDetails[512];
     Format(sDetails, sizeof(sDetails),
-        "Detection: %d | CmdsPerSec: %d | ExpectedMax: ~%d | AvgChoke: %.2f | Current TPS: %d | Baseline TPS: %d | Tickrate: %d | %s",
+        "Detection: %d | CmdsPerSec: %d | CmdnumRate: %d | Dups: %d | ExpectedMax: ~%d | AvgChoke: %.2f | Ahead: %.0f | Current TPS: %d | Baseline TPS: %d | Tickrate: %d | %s",
         speedhack_detection[client], cmdcount,
+        player_cmdnum_rate[client], player_cmdnum_dups[client],
         RoundToFloor(float(baseline) * SPEEDHACK_CMD_RATIO),
         player_avg_choke[client],
+        ahead / GetTickInterval(),
         g_iCurrentTPS,
         RoundToNearest(g_fTPSBaselineEWMA),
         g_iServerTickrate,

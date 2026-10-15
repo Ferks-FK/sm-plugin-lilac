@@ -284,6 +284,10 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
         if (!force_disable_bhop && icvar[CVAR_BHOP])
             lilac_bhop_check(client, buttons, lbuttons[client]);
 
+        /* Command numbers, for the speedhack check. */
+        if (icvar[CVAR_SPEEDHACK])
+            lilac_speedhack_cmd(client, cmdnum);
+
         /* Patch Angle-Cheats. */
         if (icvar[CVAR_PATCH_ANGLES])
             lilac_angles_patch(angles);
