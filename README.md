@@ -69,6 +69,7 @@ All settings are ConVars. The ones you are most likely to change:
 | `lilac_speedhack` | `3` | `0` = disabled, `1` = log only, `3` or more = ban on n'th detection. |
 | `lilac_infected_damage` | `3` | L4D2 only. `0` = disabled, `1` = log only, `3` or more = ban on n'th detection. |
 | `lilac_survivor_damage` | `3` | L4D2 only. `0` = disabled, `1` = log only, `3` or more = ban on n'th detection. |
+| `lilac_telemetry` | `0` | Measurement and debug logs, they never change a decision. Add the values: `1` = aimbot files, `2` = speedhack shadow log and extra detection fields, `4` = command bursts, `8` = survivor damage clock. `15` = all. |
 | `lilac_convar` | `1` | `-1` = log only, `0` = disabled, `1` = kick, `2` = ban. |
 | `lilac_network_veto` | `1` | Ignore timing-based detections for players with a bad connection. |
 | `lilac_macro` | `0` | `-1` = log only, `0` = disabled, `1` = enabled. |

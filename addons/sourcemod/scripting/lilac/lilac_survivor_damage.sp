@@ -198,6 +198,9 @@ public Action event_player_hurt_survivor_dmg(Event event, const char[] name, boo
 /* Log only. Writes when the real clock total is over the limit. */
 static void lilac_survivor_damage_clock_note(int attacker, const char[] weapon, int threshold, int total, int real_total)
 {
+    if (!(icvar[CVAR_TELEMETRY] & TELEMETRY_DAMAGE))
+        return;
+
     float real_now = GetEngineTime();
 
     if (real_now - surv_dmg_clock_last[attacker] < SURV_DMG_CLOCK_COOLDOWN)

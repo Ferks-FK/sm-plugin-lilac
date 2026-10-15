@@ -70,7 +70,15 @@
 #define CVAR_DISCORD_ROLE          43
 #define CVAR_DISCORD_ADDRESS       44
 #define CVAR_DISCORD_LOGO          45
-#define CVAR_MAX                   46
+#define CVAR_TELEMETRY             46
+#define CVAR_MAX                   47
+
+/* Bits of lilac_telemetry. Measurement and debug only, they never change a
+ * decision. */
+#define TELEMETRY_AIMBOT           (1 << 0)
+#define TELEMETRY_SPEEDHACK        (1 << 1)
+#define TELEMETRY_NETWORK          (1 << 2)
+#define TELEMETRY_DAMAGE           (1 << 3)
 
 /* What happened to the player, for Discord reports. */
 #define DISCORD_BANNED             0
@@ -158,6 +166,9 @@
 #define NET_MAX_PING     150.0
 #define NET_MAX_JITTER   25.0
 #define NET_MAX_LOSS     0.02
+/* Commands run per tick, last 64 ticks with commands. Needs 8 to report. */
+#define NET_BURST_SAMPLES  64
+#define NET_BURST_MIN      8
 /* Choke is a rate/bandwidth-budget artifact (client throttling its own send
  * rate versus cl_cmdrate/cl_updaterate), not a direct measure of link
  * instability the way loss/jitter/ping are — a client that never tuned these
@@ -313,6 +324,12 @@ float playerinfo_net_ping[MAXPLAYERS + 1][NET_SAMPLES];
 bool  playerinfo_net_valid[MAXPLAYERS + 1][NET_SAMPLES];
 int   playerinfo_net_index[MAXPLAYERS + 1];
 int   playerinfo_net_count[MAXPLAYERS + 1];
+
+int   playerinfo_burst_ring[MAXPLAYERS + 1][NET_BURST_SAMPLES];
+int   playerinfo_burst_index[MAXPLAYERS + 1];
+int   playerinfo_burst_count[MAXPLAYERS + 1];
+int   playerinfo_burst_tick[MAXPLAYERS + 1];
+int   playerinfo_burst_cur[MAXPLAYERS + 1];
 
 /* Forward declarations so we don't need third-party include files. */
 
