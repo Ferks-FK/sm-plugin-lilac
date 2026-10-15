@@ -785,7 +785,13 @@ public void cvar_change(ConVar convar, const char[] oldValue, const char[] newVa
         icvar[CVAR_SURVIVOR_DMG] = StringToInt(newValue);
     }
     else if (convar == hcvar[CVAR_TELEMETRY]) {
+        int old = icvar[CVAR_TELEMETRY];
+
         icvar[CVAR_TELEMETRY] = StringToInt(newValue);
+
+        if (!(old & TELEMETRY_NETWORK) && (icvar[CVAR_TELEMETRY] & TELEMETRY_NETWORK))
+            lilac_network_burst_reset_all();
+
         lilac_log_telemetry_setup();
     }
     else if (convar == hcvar[CVAR_DISCORD]) {

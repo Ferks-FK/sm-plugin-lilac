@@ -38,10 +38,22 @@ void lilac_network_reset_client(int client)
 		playerinfo_net_valid[client][i] = false;
 	}
 
+	lilac_network_burst_reset(client);
+}
+
+static void lilac_network_burst_reset(int client)
+{
 	playerinfo_burst_index[client] = 0;
 	playerinfo_burst_count[client] = 0;
 	playerinfo_burst_tick[client] = -1;
 	playerinfo_burst_cur[client] = 0;
+}
+
+/* Forget the bursts seen before the network telemetry was switched on. */
+void lilac_network_burst_reset_all()
+{
+	for (int i = 0; i <= MAXPLAYERS; i++)
+		lilac_network_burst_reset(i);
 }
 
 /* Commands the server ran for this player in one tick. Telemetry only,
