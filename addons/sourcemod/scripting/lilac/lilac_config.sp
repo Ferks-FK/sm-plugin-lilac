@@ -158,6 +158,9 @@ void lilac_config_setup()
     hcvar[CVAR_SURVIVOR_DMG] = new Convar("lilac_survivor_damage", "3",
         "Detect survivor burst-damage exploit against the Tank (L4D2 only).\n0 = Disabled.\n1 = Log only.\n3 or more = ban on n'th detection (Minimum possible is 3).",
         FCVAR_PROTECTED, true, 0.0, false, 0.0);
+    hcvar[CVAR_TELEMETRY] = new Convar("lilac_telemetry", "0",
+        "Measurement and debug logs, they never change a decision.\n0 = Off.\n1 = Aimbot (smooth and angle metric files).\n2 = Speedhack (shadow file and extra detection fields).\n4 = Network (command bursts).\n8 = Survivor damage clock file.\nAdd the values to combine them (15 = all).",
+        FCVAR_PROTECTED, true, 0.0, true, 15.0);
 
     for (int i = 0; i < CVAR_MAX; i++) {
         if (i != CVAR_LOG_DATE)
@@ -780,6 +783,16 @@ public void cvar_change(ConVar convar, const char[] oldValue, const char[] newVa
     }
     else if (convar == hcvar[CVAR_SURVIVOR_DMG]) {
         icvar[CVAR_SURVIVOR_DMG] = StringToInt(newValue);
+    }
+    else if (convar == hcvar[CVAR_TELEMETRY]) {
+        int old = icvar[CVAR_TELEMETRY];
+
+        icvar[CVAR_TELEMETRY] = StringToInt(newValue);
+
+        if (!(old & TELEMETRY_NETWORK) && (icvar[CVAR_TELEMETRY] & TELEMETRY_NETWORK))
+            lilac_network_burst_reset_all();
+
+        lilac_log_telemetry_setup();
     }
     else if (convar == hcvar[CVAR_DISCORD]) {
         icvar[CVAR_DISCORD] = StringToInt(newValue);

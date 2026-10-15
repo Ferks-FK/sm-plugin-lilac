@@ -66,6 +66,11 @@ static int   player_cmdnum_rate[MAXPLAYERS + 1];
 static int   player_cmdnum_dups[MAXPLAYERS + 1];
 static float player_ignored_note[MAXPLAYERS + 1];
 
+// Telemetry only (lilac_telemetry 2).
+static float player_pos_prev[MAXPLAYERS + 1][3];
+static float player_pos_time[MAXPLAYERS + 1];
+static float player_moved[MAXPLAYERS + 1];
+
 void lilac_speedhack_reset_client(int client)
 {
     speedhack_detection[client] = 0;
@@ -78,6 +83,8 @@ void lilac_speedhack_reset_client(int client)
     player_cmdnum_rate[client] = -1;
     player_cmdnum_dups[client] = 0;
     player_ignored_note[client] = 0.0;
+    player_pos_time[client] = 0.0;
+    player_moved[client] = 0.0;
 
     shadow_normal[client] = 0.0;
     shadow_seed_sum[client] = 0.0;
@@ -194,6 +201,20 @@ static void lilac_speedhack_shadow(int client, int count, bool flagged)
     shadow_observed[client]++;
 }
 
+/* How far the player moved since the previous check. */
+static void lilac_speedhack_sample_moved(int client)
+{
+    float pos[3];
+
+    GetClientAbsOrigin(client, pos);
+
+    player_moved[client] = (player_pos_time[client] > 0.0)
+        ? GetVectorDistance(pos, player_pos_prev[client]) : 0.0;
+
+    player_pos_prev[client] = pos;
+    player_pos_time[client] = GetEngineTime();
+}
+
 /* Called for every command the player runs. */
 void lilac_speedhack_cmd(int client, int cmdnum)
 {
@@ -291,6 +312,9 @@ public Action timer_check_speedhack(Handle timer)
         lilac_speedhack_update_choke(client);
         lilac_speedhack_sample_cmdnum(client);
 
+        if (icvar[CVAR_TELEMETRY] & TELEMETRY_SPEEDHACK)
+            lilac_speedhack_sample_moved(client);
+
         bool vetoed = lilac_network_vetoed(client);
         if (vetoed)
             player_last_vetoed[client] = now;
@@ -332,7 +356,8 @@ public Action timer_check_speedhack(Handle timer)
         else if (flagged)
             lilac_detected_speedhack(client, count, baseline);
 
-        lilac_speedhack_shadow(client, count, flagged);
+        if (icvar[CVAR_TELEMETRY] & TELEMETRY_SPEEDHACK)
+            lilac_speedhack_shadow(client, count, flagged);
     }
 
     return Plugin_Continue;
@@ -385,9 +410,25 @@ static void lilac_detected_speedhack(int client, int cmdcount, int baseline)
     float ahead = playerinfo_time_usercmd[client][playerinfo_index[client]]
         - float(GetGameTickCount()) * GetTickInterval();
 
-    char sDetails[512];
+    /* Telemetry: what the player was doing and how his client is set up. */
+    char sExtra[192];
+    sExtra[0] = '\0';
+
+    if (icvar[CVAR_TELEMETRY] & TELEMETRY_SPEEDHACK) {
+        char sCmdrate[16], sUpdaterate[16];
+
+        GetClientInfo(client, "cl_cmdrate", sCmdrate, sizeof(sCmdrate));
+        GetClientInfo(client, "cl_updaterate", sUpdaterate, sizeof(sUpdaterate));
+
+        FormatEx(sExtra, sizeof(sExtra),
+            " | Moved: %.0f | Flags: %d | MoveType: %d | cl_cmdrate: %s | cl_updaterate: %s",
+            player_moved[client], GetEntityFlags(client),
+            view_as<int>(GetEntityMoveType(client)), sCmdrate, sUpdaterate);
+    }
+
+    char sDetails[640];
     Format(sDetails, sizeof(sDetails),
-        "Detection: %d | CmdsPerSec: %d | CmdnumRate: %d | Dups: %d | ExpectedMax: ~%d | AvgChoke: %.2f | Ahead: %.0f | Current TPS: %d | Baseline TPS: %d | Tickrate: %d | %s",
+        "Detection: %d | CmdsPerSec: %d | CmdnumRate: %d | Dups: %d | ExpectedMax: ~%d | AvgChoke: %.2f | Ahead: %.0f | Current TPS: %d | Baseline TPS: %d | Tickrate: %d | %s%s",
         speedhack_detection[client], cmdcount,
         player_cmdnum_rate[client], player_cmdnum_dups[client],
         RoundToFloor(float(baseline) * SPEEDHACK_CMD_RATIO),
@@ -396,7 +437,7 @@ static void lilac_detected_speedhack(int client, int cmdcount, int baseline)
         g_iCurrentTPS,
         RoundToNearest(g_fTPSBaselineEWMA),
         g_iServerTickrate,
-        sNet);
+        sNet, sExtra);
 
     lilac_save_player_details(client, sDetails);
     lilac_forward_client_cheat(client, CHEAT_SPEEDHACK);

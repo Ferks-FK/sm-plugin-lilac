@@ -38,6 +38,92 @@ void lilac_network_reset_client(int client)
 		playerinfo_net_valid[client][i] = false;
 	}
 
+	lilac_network_burst_reset(client);
+}
+
+static void lilac_network_burst_reset(int client)
+{
+	playerinfo_burst_index[client] = 0;
+	playerinfo_burst_count[client] = 0;
+	playerinfo_burst_tick[client] = -1;
+	playerinfo_burst_cur[client] = 0;
+}
+
+/* Forget the bursts seen before the network telemetry was switched on. */
+void lilac_network_burst_reset_all()
+{
+	for (int i = 0; i <= MAXPLAYERS; i++)
+		lilac_network_burst_reset(i);
+}
+
+/* Commands the server ran for this player in one tick. Telemetry only,
+ * never used to veto. */
+void lilac_network_burst_cmd(int client)
+{
+	if (!(icvar[CVAR_TELEMETRY] & TELEMETRY_NETWORK))
+		return;
+
+	/* A lagging server bursts every player. */
+	if (lilac_server_is_lagging()) {
+		playerinfo_burst_tick[client] = -1;
+		playerinfo_burst_cur[client] = 0;
+		return;
+	}
+
+	int tick = GetGameTickCount();
+
+	if (tick == playerinfo_burst_tick[client]) {
+		playerinfo_burst_cur[client]++;
+		return;
+	}
+
+	if (playerinfo_burst_cur[client] > 0) {
+		playerinfo_burst_ring[client][playerinfo_burst_index[client]] = playerinfo_burst_cur[client];
+
+		if (++playerinfo_burst_index[client] >= NET_BURST_SAMPLES)
+			playerinfo_burst_index[client] = 0;
+
+		if (playerinfo_burst_count[client] < NET_BURST_SAMPLES)
+			playerinfo_burst_count[client]++;
+	}
+
+	playerinfo_burst_tick[client] = tick;
+	playerinfo_burst_cur[client] = 1;
+}
+
+/* Average, maximum and spread of the last bursts, plus the packets and
+ * commands per second behind them. */
+void lilac_network_format_burst(int client, char[] buffer, int maxlen)
+{
+	int n = playerinfo_burst_count[client];
+	char stats[40];
+
+	if (n < NET_BURST_MIN) {
+		strcopy(stats, sizeof(stats), "n/a");
+	}
+	else {
+		float sum = 0.0, sq = 0.0;
+		int max = 0;
+
+		for (int i = 0; i < n; i++) {
+			int b = playerinfo_burst_ring[client][i];
+
+			sum += float(b);
+			sq += float(b * b);
+
+			if (b > max)
+				max = b;
+		}
+
+		float avg = sum / float(n);
+		float sd = SquareRoot(FloatAbs(sq / float(n) - avg * avg));
+
+		FormatEx(stats, sizeof(stats), "avg %.1f max %d sd %.1f", avg, max, sd);
+	}
+
+	FormatEx(buffer, maxlen, "%s pkts/s %.0f cmds/s %d", stats,
+		GetClientAvgPackets(client, NetFlow_Incoming),
+		lilac_recent_cmd_count(client, GetGameTime()));
 }
 
 public Action timer_sample_network(Handle timer)
@@ -129,15 +215,24 @@ int lilac_network_get_invalid_count(int client)
  * was not trusted — and so thresholds can be recalibrated from real data. */
 void lilac_network_format(int client, char[] buffer, int maxlen)
 {
+	char burst[112];
+	burst[0] = '\0';
+
+	if (icvar[CVAR_TELEMETRY] & TELEMETRY_NETWORK) {
+		char stats[96];
+		lilac_network_format_burst(client, stats, sizeof(stats));
+		FormatEx(burst, sizeof(burst), " | Burst: %s", stats);
+	}
+
 	FormatEx(buffer, maxlen,
-		"Ping: %.0f | Jitter: %.1f | Loss: %.1f/%.1f | Choke: %.1f/%.1f | BadSamples: %d",
+		"Ping: %.0f | Jitter: %.1f | Loss: %.1f/%.1f | Choke: %.1f/%.1f | BadSamples: %d%s",
 		lilac_network_get_max_ping(client),
 		lilac_network_get_jitter(client),
 		GetClientAvgLoss(client, NetFlow_Incoming) * 100.0,
 		GetClientAvgLoss(client, NetFlow_Outgoing) * 100.0,
 		GetClientAvgChoke(client, NetFlow_Incoming) * 100.0,
 		GetClientAvgChoke(client, NetFlow_Outgoing) * 100.0,
-		lilac_network_get_invalid_count(client));
+		lilac_network_get_invalid_count(client), burst);
 }
 
 /* High choke that a real connection can produce. Values above

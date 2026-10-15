@@ -254,6 +254,8 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
         get_player_log_angles(client, 0, true, angles);
     }
 
+    lilac_network_burst_cmd(client);
+
     /* Increment the index. */
     if (++playerinfo_index[client] >= CMD_LENGTH)
         playerinfo_index[client] = 0;

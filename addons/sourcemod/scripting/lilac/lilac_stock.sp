@@ -169,11 +169,20 @@ void lilac_log_extra(int client)
 	GetCurrentMap(map, sizeof(map));
 	GetClientWeapon(client, weapon, sizeof(weapon));
 
+	char burst[112];
+	burst[0] = '\0';
+
+	if (icvar[CVAR_TELEMETRY] & TELEMETRY_NETWORK) {
+		char stats[96];
+		lilac_network_format_burst(client, stats, sizeof(stats));
+		FormatEx(burst, sizeof(burst), ", Burst={%s}", stats);
+	}
+
 	/* Latency in ms, Loss/Choke in % — same scale and precision as
 	 * lilac_network_format(), instead of raw 0-1 fractions at the default
 	 * 6 decimal places. */
 	FormatEx(line_buffer, sizeof(line_buffer),
-		"\tServerTick={%d}, Pos={%.0f,%.0f,%.0f}, Angles={%.5f,%.5f,%.5f}, Map=\"%s\", Team={%d}, Weapon=\"%s\", Latency={Inc:%.1f,Out:%.1f}, Loss={Inc:%.1f,Out:%.1f}, Choke={Inc:%.1f,Out:%.1f}, ConnectionTime={%.1f seconds}, GameTime={%.1f seconds}",
+		"\tServerTick={%d}, Pos={%.0f,%.0f,%.0f}, Angles={%.5f,%.5f,%.5f}, Map=\"%s\", Team={%d}, Weapon=\"%s\", Latency={Inc:%.1f,Out:%.1f}, Loss={Inc:%.1f,Out:%.1f}, Choke={Inc:%.1f,Out:%.1f}%s, ConnectionTime={%.1f seconds}, GameTime={%.1f seconds}",
 		GetGameTickCount(),
 		pos[0], pos[1], pos[2],
 		ang[0], ang[1], ang[2],
@@ -184,7 +193,7 @@ void lilac_log_extra(int client)
 		GetClientAvgLoss(client, NetFlow_Outgoing) * 100.0,
 		GetClientAvgChoke(client, NetFlow_Incoming) * 100.0,
 		GetClientAvgChoke(client, NetFlow_Outgoing) * 100.0,
-		GetClientTime(client), GetGameTime());
+		burst, GetClientTime(client), GetGameTime());
 
 	/* Where to jump in the SourceTV demo. */
 	int demo_tick = lilac_demo_tick();
@@ -267,6 +276,9 @@ void lilac_log_smooth_telemetry(int client, int sm_n, float sm_cv, float sm_avg_
     float sm_total_delta, float final_dist,
     float pre_ratio = -1.0, float post_ratio = -1.0)
 {
+    if (!(icvar[CVAR_TELEMETRY] & TELEMETRY_AIMBOT))
+        return;
+
     Handle file = OpenFile(smooth_telemetry_log_file, "a");
 
     if (file == null) {
@@ -342,7 +354,7 @@ void lilac_log_speedhack_shadow_setup()
 
 void lilac_log_speedhack_shadow(int client, const char[] message)
 {
-    if (!icvar[CVAR_LOG])
+    if (!icvar[CVAR_LOG] || !(icvar[CVAR_TELEMETRY] & TELEMETRY_SPEEDHACK))
         return;
 
     Handle file = OpenFile(speedhack_shadow_log_file, "a");
@@ -399,7 +411,7 @@ void lilac_log_damage_clock_setup()
 
 void lilac_log_damage_clock(int client, const char[] message)
 {
-    if (!icvar[CVAR_LOG])
+    if (!icvar[CVAR_LOG] || !(icvar[CVAR_TELEMETRY] & TELEMETRY_DAMAGE))
         return;
 
     Handle file = OpenFile(damage_clock_log_file, "a");
@@ -427,6 +439,9 @@ void lilac_log_angle_metric(int client, float eu_delta, float tr_delta,
     float eu_total, float tr_total, float eu_final, float tr_final,
     float shot_pitch, int eu_flags, int tr_flags, int ticks)
 {
+    if (!(icvar[CVAR_TELEMETRY] & TELEMETRY_AIMBOT))
+        return;
+
     Handle file = OpenFile(angle_metric_log_file, "a");
 
     if (file == null) {
@@ -474,9 +489,21 @@ That is all, have a wonderful day~\n\n\n", PLUGIN_VERSION);
         lilac_log(false);
     }
 
-    lilac_log_smooth_telemetry_setup();
-    lilac_log_speedhack_shadow_setup();
-    lilac_log_damage_clock_setup();
+    lilac_log_telemetry_setup();
+}
+
+/* Creates the files of the telemetry that is on. Also called when
+ * lilac_telemetry changes. */
+void lilac_log_telemetry_setup()
+{
+    if (icvar[CVAR_TELEMETRY] & TELEMETRY_AIMBOT)
+        lilac_log_smooth_telemetry_setup();
+
+    if (icvar[CVAR_TELEMETRY] & TELEMETRY_SPEEDHACK)
+        lilac_log_speedhack_shadow_setup();
+
+    if (icvar[CVAR_TELEMETRY] & TELEMETRY_DAMAGE)
+        lilac_log_damage_clock_setup();
 }
 
 /* True when a detection of this cheat ends in a ban. */
