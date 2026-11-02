@@ -9,13 +9,13 @@
 "SurvivorDamage"
 {
 	// Built-in limits, for reference.
-	// "pistol"		"294"
-	// "pistol_magnum"	"332"
-	// "smg"		"340"
-	// "smg_silenced"	"429"
-	// "pumpshotgun"	"504"
-	// "shotgun_chrome"	"502"
+	// "pistol"				"294"
+	// "pistol_magnum"		"332"
+	// "smg"				"340"
+	// "smg_silenced"		"429"
+	// "pumpshotgun"		"504"
+	// "shotgun_chrome"		"502"
 	// "prop_minigun_l4d1"	"403"
-	// "melee"		"588"
-	// "chainsaw"		"1155"
+	// "melee"				"588"
+	// "chainsaw"			"1155"
 }
