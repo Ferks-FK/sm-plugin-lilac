@@ -148,8 +148,6 @@ The first detection is not logged, and detections are forgotten after 10 minutes
 
 You can control them with `lilac_infected_damage` and `lilac_survivor_damage`: `0` = disabled, `1` = log only, `3` or more = ban on that detection.
 
-If a legitimate player gets flagged, set the module to log-only and [open an issue](https://github.com/Ferks-FK/sm-plugin-lilac/issues) with the log line attached. This can happen on servers with plugins that change damage or weapon speed.
-
 **Q: My server changes the damage of a weapon, how do I stop the Survivor damage false positives?**\
 A: The limits are the most damage one survivor can do to a Tank in one second, with the normal damage of the game. If a plugin changes the damage, give that weapon its own limit in `addons/sourcemod/configs/lilac_survivor_damage.cfg` (see `lilac_survivor_damage.cfg.example`). A value there replaces the built-in one, `0` turns the check off for that weapon. Apply it with `lilac_survivor_damage_reload`, and `lilac_ban_status` lists the limits in use.
 
