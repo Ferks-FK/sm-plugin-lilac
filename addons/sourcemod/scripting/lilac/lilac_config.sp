@@ -209,6 +209,7 @@ void lilac_config_setup()
     RegServerCmd("lilac_set_ban_length", lilac_set_ban_length, "Sets custom ban lengths for specific cheats.", 0);
     RegServerCmd("lilac_get_bans_length", lilac_get_bans_length, "Shows current ban lengths for all cheat types.", 0);
     RegServerCmd("lilac_ban_status", lilac_ban_status, "Prints banning status to server console.", 0);
+    RegServerCmd("lilac_survivor_damage_reload", lilac_survivor_damage_reload, "Reads the survivor damage limits file again.", 0);
     RegServerCmd("lilac_bhop_set", lilac_bhop_set, "Sets Custom Bhop settings", 0);
     RegServerCmd("lilac_discord_test", lilac_discord_test, "Sends a test report to the Discord webhook. Usage: lilac_discord_test [ban|kick|suspect]", 0);
 
@@ -382,8 +383,10 @@ public Action lilac_ban_status(int args)
     PrintToServer("SourceTV Manager (demo tick in logs):");
     PrintToServer("\tNative Exists: %s", ((NATIVE_EXISTS("SourceTV_GetRecordingTick")) ? "Yes" : "No"));
 
-    if (g_bGame == Engine_Left4Dead2)
+    if (g_bGame == Engine_Left4Dead2) {
         lilac_infected_damage_print_limits();
+        lilac_survivor_damage_print_limits();
+    }
 
     PrintToServer("Material-Admin:");
     PrintToServer("\tLoaded: %s", ((LibraryExists("materialadmin")) ? "Yes" : "No"));
