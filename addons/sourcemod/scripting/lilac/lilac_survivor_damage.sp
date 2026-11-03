@@ -48,7 +48,11 @@ static bool surv_dmg_tank_is_dying(int tank)
 	return view_as<bool>(GetEntData(tank, g_iOffsetTankIncapacitated));
 }
 
+/* Limits of this server, read from this file. They replace the built-in ones. */
+#define SURV_DMG_CONFIG      "configs/lilac_survivor_damage.cfg"
+
 static StringMap weapon_dmg_threshold = null;
+static StringMap weapon_dmg_file = null;
 
 static float surv_dmg_time      [MAXPLAYERS + 1][SURV_DMG_BUF_SIZE];
 static float surv_dmg_etime     [MAXPLAYERS + 1][SURV_DMG_BUF_SIZE];
@@ -93,6 +97,118 @@ static void lilac_survivor_damage_init_maps()
 	/* Melee. */
 	weapon_dmg_threshold.SetValue("melee", 588);
 	weapon_dmg_threshold.SetValue("chainsaw", 1155);
+
+	lilac_survivor_damage_load_file();
+}
+
+/* A server that changes the damage of a weapon needs its own limit. */
+static void lilac_survivor_damage_load_file()
+{
+	char path[PLATFORM_MAX_PATH];
+
+	BuildPath(Path_SM, path, sizeof(path), SURV_DMG_CONFIG);
+
+	if (!FileExists(path))
+		return;
+
+	KeyValues kv = new KeyValues("SurvivorDamage");
+
+	if (!kv.ImportFromFile(path)) {
+		PrintToServer("[Lilac] Cannot read %s.", SURV_DMG_CONFIG);
+		delete kv;
+		return;
+	}
+
+	weapon_dmg_file = new StringMap();
+
+	if (kv.GotoFirstSubKey(false)) {
+		do {
+			char weapon[64], text[16];
+			int limit;
+
+			kv.GetSectionName(weapon, sizeof(weapon));
+			kv.GetString(NULL_STRING, text, sizeof(text));
+
+			/* Whole numbers only, 0 turns the weapon off. */
+			if (text[0] == '\0' || StringToIntEx(text, limit) != strlen(text) || limit < 0) {
+				PrintToServer("[Lilac] %s: ignoring \"%s\" \"%s\", the limit must be a whole number, 0 or more.",
+					SURV_DMG_CONFIG, weapon, text);
+				continue;
+			}
+
+			weapon_dmg_threshold.SetValue(weapon, limit);
+			weapon_dmg_file.SetValue(weapon, 1);
+		} while (kv.GotoNextKey(false));
+	}
+
+	delete kv;
+
+	if (weapon_dmg_file.Size == 0)
+		return;
+
+	PrintToServer("[Lilac] Survivor damage: %d limit(s) read from %s.", weapon_dmg_file.Size, SURV_DMG_CONFIG);
+
+	if (icvar[CVAR_LOG]) {
+		char date[64], weapon[64], list[256];
+		StringMapSnapshot snap = weapon_dmg_file.Snapshot();
+
+		list[0] = '\0';
+
+		for (int i = 0; i < snap.Length; i++) {
+			int limit;
+
+			snap.GetKey(i, weapon, sizeof(weapon));
+			weapon_dmg_threshold.GetValue(weapon, limit);
+			Format(list, sizeof(list), "%s%s%s %d", list, (i ? ", " : ""), weapon, limit);
+		}
+
+		delete snap;
+		FormatTime(date, sizeof(date), dateformat, GetTime());
+		FormatEx(line_buffer, sizeof(line_buffer),
+			"%s [Version %s] Survivor damage limits read from %s: %s.",
+			date, PLUGIN_VERSION, SURV_DMG_CONFIG, list);
+
+		lilac_log(false);
+	}
+}
+
+/* For the status command. */
+void lilac_survivor_damage_print_limits()
+{
+	char names[32][64];
+
+	lilac_survivor_damage_init_maps();
+
+	StringMapSnapshot snap = weapon_dmg_threshold.Snapshot();
+	int count = (snap.Length < sizeof(names)) ? snap.Length : sizeof(names);
+
+	for (int i = 0; i < count; i++)
+		snap.GetKey(i, names[i], sizeof(names[]));
+
+	delete snap;
+	SortStrings(names, count, Sort_Ascending);
+
+	PrintToServer("Survivor damage limits (damage to a Tank in one second, 0 = off):");
+
+	for (int i = 0; i < count; i++) {
+		int limit, from_file;
+
+		weapon_dmg_threshold.GetValue(names[i], limit);
+
+		PrintToServer("\t%s: %d%s", names[i], limit,
+			(weapon_dmg_file != null && weapon_dmg_file.GetValue(names[i], from_file)) ? " (file)" : "");
+	}
+}
+
+/* Reads the limits file again. */
+public Action lilac_survivor_damage_reload(int args)
+{
+	delete weapon_dmg_threshold;
+	delete weapon_dmg_file;
+
+	lilac_survivor_damage_print_limits();
+
+	return Plugin_Handled;
 }
 
 public Action event_player_hurt_survivor_dmg(Event event, const char[] name, bool dontBroadcast)

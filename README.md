@@ -68,7 +68,7 @@ All settings are ConVars. The ones you are most likely to change:
 | `lilac_aimlock` | `10` | `0` = disabled, `1` = log only, `5` or more = ban on n'th detection. |
 | `lilac_speedhack` | `3` | `0` = disabled, `1` = log only, `3` or more = ban on n'th detection. |
 | `lilac_infected_damage` | `3` | L4D2 only. `0` = disabled, `1` = log only, `3` or more = ban on n'th detection. |
-| `lilac_survivor_damage` | `3` | L4D2 only. `0` = disabled, `1` = log only, `3` or more = ban on n'th detection. |
+| `lilac_survivor_damage` | `3` | L4D2 only. `0` = disabled, `1` = log only, `3` or more = ban on n'th detection. If your server changes weapon damage, set the limits in `configs/lilac_survivor_damage.cfg` (see the FAQ below). |
 | `lilac_telemetry` | `0` | Measurement and debug logs, they never change a decision. Add the values: `1` = aimbot files, `2` = speedhack shadow log and extra detection fields, `4` = command bursts, `8` = survivor damage clock. `15` = all. |
 | `lilac_convar` | `1` | `-1` = log only, `0` = disabled, `1` = kick, `2` = ban. |
 | `lilac_network_veto` | `1` | Ignore timing-based detections for players with a bad connection. |
@@ -84,6 +84,7 @@ Each ban threshold has a minimum (5 for Aimbot and Aimlock, 3 for Speedhack, Inf
  - `lilac_set_ban_length` - Sets custom ban lengths for specific cheats.
  - `lilac_get_bans_length` - Shows the current ban lengths for all cheat types.
  - `lilac_ban_status` - Prints the banning status (which ban backend is being used).
+ - `lilac_survivor_damage_reload` - Reads the survivor damage limits file again (L4D2).
  - `lilac_bhop_set` - Sets custom Bhop settings (needs `lilac_bhop 3`).
  - `lilac_date_list` - Lists the date formatting options for `lilac_log_date`.
  - `lilac_discord_test [ban|kick|suspect]` - Sends a sample report to the Discord webhook, to check it works.
@@ -147,7 +148,10 @@ The first detection is not logged, and detections are forgotten after 10 minutes
 
 You can control them with `lilac_infected_damage` and `lilac_survivor_damage`: `0` = disabled, `1` = log only, `3` or more = ban on that detection.
 
-If a legitimate player gets flagged, set the module to log-only and [open an issue](https://github.com/Ferks-FK/sm-plugin-lilac/issues) with the log line attached. This can happen on servers with plugins that change damage or weapon speed.
+**Q: My server changes the damage of a weapon, how do I stop the Survivor damage false positives?**\
+A: The limits are the most damage one survivor can do to a Tank in one second, with the normal damage of the game. If a plugin changes the damage, give that weapon its own limit in `addons/sourcemod/configs/lilac_survivor_damage.cfg` (see `lilac_survivor_damage.cfg.example`). A value there replaces the built-in one, `0` turns the check off for that weapon. Apply it with `lilac_survivor_damage_reload`, and `lilac_ban_status` lists the limits in use.
+
+To find the right value, set `lilac_survivor_damage 1` and `lilac_telemetry 8`, play normally and look at the highest `GameClock` in `lilac_damage_clock.log` (or `DmgInWindow` in `lilac.log`) of players you trust. Use that value plus a margin of about 5%, and raise it until the lines stop.
 
 **Q: Why does Lilac ignore some detections?**\
 A: To avoid false positives, some detections are ignored when the player has a bad connection (`lilac_network_veto`, `lilac_loss_fix`), was just teleported or spawned, or is a ghost in L4D2.\

@@ -1,0 +1,21 @@
+// Damage limits of the Survivor damage module (L4D2), one per weapon.
+//
+// Copy this file to lilac_survivor_damage.cfg and keep only the weapons whose
+// damage your server changes. A value here replaces the built-in limit.
+// The value is the most damage one survivor can do to a Tank in one second.
+// 0 turns the check off for that weapon.
+//
+// Apply the changes with: lilac_survivor_damage_reload
+"SurvivorDamage"
+{
+	// Built-in limits, for reference.
+	// "pistol"				"294"
+	// "pistol_magnum"		"332"
+	// "smg"				"340"
+	// "smg_silenced"		"429"
+	// "pumpshotgun"		"504"
+	// "shotgun_chrome"		"502"
+	// "prop_minigun_l4d1"	"403"
+	// "melee"				"588"
+	// "chainsaw"			"1155"
+}
