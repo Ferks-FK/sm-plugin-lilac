@@ -214,7 +214,7 @@
 #define PLUGIN_AUTHOR    "J_Tanzanite, Ferks-FK"
 #define PLUGIN_DESC      "An opensource Anti-Cheat"
 #define PLUGIN_VERSION   "1.8.6"
-#define PLUGIN_URL       "https://github.com/J-Tanzanite/Little-Anti-Cheat"
+#define PLUGIN_URL       "https://github.com/Ferks-FK/sm-plugin-lilac"
 
 /* Set to 0 to remove all shadow-metric code from the build. */
 #define LILAC_ANGLE_METRIC_DEBUG 1
