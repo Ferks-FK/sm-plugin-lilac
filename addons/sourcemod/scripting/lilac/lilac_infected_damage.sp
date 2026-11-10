@@ -19,6 +19,9 @@
 #define INF_DMG_BUF_SIZE    128
 #define INF_DMG_MAX_FACTOR  4.0
 
+/* Limits of this server, read from this file. They replace the built-in ones. */
+#define INF_DMG_CONFIG      "configs/lilac_infected_damage.cfg"
+
 /* Max damage one survivor can take from one infected in one second, by
  * zombie class. 0 disables the class. */
 static const int inf_dmg_threshold[9] = {0, 15, 0, 50, 60, 10, 40, 0, 60};
@@ -66,6 +69,7 @@ static const char inf_dmg_class_name[9][] = {
 static ConVar inf_dmg_cvar_handle[13];
 static bool   inf_dmg_cvars_found = false;
 static float  inf_dmg_last_factor[9];
+static int    inf_dmg_file_limit[9];
 
 static void lilac_infected_damage_find_cvars()
 {
@@ -74,11 +78,83 @@ static void lilac_infected_damage_find_cvars()
 
 	inf_dmg_cvars_found = true;
 
-	for (int i = 0; i < sizeof(inf_dmg_last_factor); i++)
+	for (int i = 0; i < sizeof(inf_dmg_last_factor); i++) {
 		inf_dmg_last_factor[i] = 1.0;
+		inf_dmg_file_limit[i] = -1;
+	}
 
 	for (int i = 0; i < sizeof(inf_dmg_cvar_name); i++)
 		inf_dmg_cvar_handle[i] = FindConVar(inf_dmg_cvar_name[i]);
+
+	lilac_infected_damage_load_file();
+}
+
+/* A server whose plugins change the damage of a class needs its own limit. */
+static void lilac_infected_damage_load_file()
+{
+	char path[PLATFORM_MAX_PATH], list[256];
+	int count = 0;
+
+	BuildPath(Path_SM, path, sizeof(path), INF_DMG_CONFIG);
+
+	if (!FileExists(path))
+		return;
+
+	KeyValues kv = new KeyValues("InfectedDamage");
+
+	if (!kv.ImportFromFile(path)) {
+		PrintToServer("[Lilac] Cannot read %s.", INF_DMG_CONFIG);
+		delete kv;
+		return;
+	}
+
+	list[0] = '\0';
+
+	if (kv.GotoFirstSubKey(false)) {
+		do {
+			char name[32], text[16];
+			int limit, zclass = 0;
+
+			kv.GetSectionName(name, sizeof(name));
+			kv.GetString(NULL_STRING, text, sizeof(text));
+
+			for (int i = 1; i <= 8; i++) {
+				if (StrEqual(name, inf_dmg_class_name[i], false)) {
+					zclass = i;
+					break;
+				}
+			}
+
+			/* A class name and a whole number, 0 turns the class off. */
+			if (zclass == 0 || text[0] == '\0' || StringToIntEx(text, limit) != strlen(text) || limit < 0) {
+				PrintToServer("[Lilac] %s: ignoring \"%s\" \"%s\", use a class name and a whole number, 0 or more.",
+					INF_DMG_CONFIG, name, text);
+				continue;
+			}
+
+			inf_dmg_file_limit[zclass] = limit;
+			Format(list, sizeof(list), "%s%s%s %d", list, (count ? ", " : ""), inf_dmg_class_name[zclass], limit);
+			count++;
+		} while (kv.GotoNextKey(false));
+	}
+
+	delete kv;
+
+	if (count == 0)
+		return;
+
+	PrintToServer("[Lilac] Infected damage: %d limit(s) read from %s.", count, INF_DMG_CONFIG);
+
+	if (icvar[CVAR_LOG]) {
+		char date[64];
+
+		FormatTime(date, sizeof(date), dateformat, GetTime());
+		FormatEx(line_buffer, sizeof(line_buffer),
+			"%s [Version %s] Infected damage limits read from %s: %s.",
+			date, PLUGIN_VERSION, INF_DMG_CONFIG, list);
+
+		lilac_log(false);
+	}
 }
 
 /* How much the cvars of this class are above the measured values. */
@@ -110,7 +186,16 @@ static float lilac_infected_damage_factor(int zclass)
 
 static int lilac_inf_threshold(int zclass)
 {
-	if (zclass < 1 || zclass > 8 || inf_dmg_threshold[zclass] == 0)
+	if (zclass < 1 || zclass > 8)
+		return 0;
+
+	lilac_infected_damage_find_cvars();
+
+	/* The limit of the file is used as it is, the cvars do not change it. */
+	if (inf_dmg_file_limit[zclass] >= 0)
+		return inf_dmg_file_limit[zclass];
+
+	if (inf_dmg_threshold[zclass] == 0)
 		return 0;
 
 	float factor = lilac_infected_damage_factor(zclass);
@@ -138,9 +223,16 @@ static int lilac_inf_threshold(int zclass)
 /* For the status command. */
 void lilac_infected_damage_print_limits()
 {
+	lilac_infected_damage_find_cvars();
+
 	PrintToServer("Infected damage limits (damage in one second):");
 
 	for (int zclass = 1; zclass <= 8; zclass++) {
+		if (inf_dmg_file_limit[zclass] >= 0) {
+			PrintToServer("\t%s: %d (file)", inf_dmg_class_name[zclass], inf_dmg_file_limit[zclass]);
+			continue;
+		}
+
 		if (inf_dmg_threshold[zclass] == 0)
 			continue;
 
@@ -150,6 +242,16 @@ void lilac_infected_damage_print_limits()
 			inf_dmg_class_name[zclass], RoundToCeil(float(inf_dmg_threshold[zclass]) * factor),
 			inf_dmg_threshold[zclass], factor);
 	}
+}
+
+/* Reads the limits file and the damage cvars again. */
+public Action lilac_infected_damage_reload(int args)
+{
+	inf_dmg_cvars_found = false;
+
+	lilac_infected_damage_print_limits();
+
+	return Plugin_Handled;
 }
 
 static int   inf_dmg_tick       [MAXPLAYERS + 1][INF_DMG_BUF_SIZE];
@@ -245,13 +347,13 @@ public Action event_player_hurt(Event event, const char[] name, bool dontBroadca
         char weapon[32];
         GetEventString(event, "weapon", weapon, sizeof(weapon));
 
-        lilac_infected_damage_flag(attacker, victim, zclass, total, damage, threshold, hits, weapon);
+        lilac_infected_damage_flag(attacker, victim, zclass, total, damage, threshold, hits, weapon, GetEventInt(event, "type"));
     }
 
     return Plugin_Continue;
 }
 
-static void lilac_infected_damage_flag(int attacker, int victim, int zclass, int total, int last_hit, int threshold, int hits, const char[] weapon)
+static void lilac_infected_damage_flag(int attacker, int victim, int zclass, int total, int last_hit, int threshold, int hits, const char[] weapon, int dtype)
 {
 	if (lilac_forward_allow_cheat_detection(attacker, CHEAT_INFECTED_DMG) == false)
 		return;
@@ -273,9 +375,9 @@ static void lilac_infected_damage_flag(int attacker, int victim, int zclass, int
 
 	char sDetails[256];
 	Format(sDetails, sizeof(sDetails),
-		"Detection: %d | Class: %s | DmgInWindow: %d | Threshold: %d | LastHit: %d | Hits: %d | Weapon: %s | Victim: %N",
+		"Detection: %d | Class: %s | DmgInWindow: %d | Threshold: %d | LastHit: %d | Hits: %d | Weapon: %s | Type: %d | Victim: %N",
 		inf_dmg_detections[attacker], class_name, total,
-		threshold, last_hit, hits, weapon, victim);
+		threshold, last_hit, hits, weapon, dtype, victim);
 
 	lilac_save_player_details(attacker, sDetails);
 	lilac_forward_client_cheat(attacker, CHEAT_INFECTED_DMG);

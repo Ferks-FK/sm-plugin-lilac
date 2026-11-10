@@ -1,0 +1,22 @@
+// Damage limits of the Infected damage module (L4D2), one per class.
+//
+// Lilac already follows the damage cvars of the game. Use this file when a
+// plugin changes the damage of an infected. Copy it to lilac_infected_damage.cfg,
+// remove the // of the classes you need and set their limits.
+//
+// The value is the most damage one survivor can take from one infected in one
+// second. It is used as it is, so measure it with the damage your server really
+// does. 0 turns the check off for that class. A class without a line keeps
+// following the damage cvars of the game.
+//
+// The values below are the built-in ones, for the normal damage of the game.
+// Apply the changes with: lilac_infected_damage_reload
+"InfectedDamage"
+{
+	// "Smoker"		"15"
+	// "Hunter"		"50"
+	// "Spitter"	"60"
+	// "Jockey"		"10"
+	// "Charger"	"40"
+	// "Tank"		"60"
+}

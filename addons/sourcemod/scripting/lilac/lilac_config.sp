@@ -153,7 +153,7 @@ void lilac_config_setup()
         "Detect Speedhack.\n0 = Disabled.\n1 = Log only.\n3 or more = ban on n'th detection (Minimum possible is 3).",
         FCVAR_PROTECTED, true, 0.0, false, 0.0);
     hcvar[CVAR_INFECTED_DMG] = new Convar("lilac_infected_damage", "3",
-        "Detect infected damage exploit (L4D2 only).\n0 = Disabled.\n1 = Log only.\n3 or more = ban on n'th detection (Minimum possible is 3).",
+        "Detect infected damage exploit (L4D2 only).\n0 = Disabled.\n1 = Log only.\n3 or more = ban on n'th detection (Minimum possible is 3).\nIf a plugin changes the damage of an infected, set the limit of its class in addons/sourcemod/configs/lilac_infected_damage.cfg.",
         FCVAR_PROTECTED, true, 0.0, false, 0.0);
     hcvar[CVAR_SURVIVOR_DMG] = new Convar("lilac_survivor_damage", "3",
         "Detect survivor burst-damage exploit against the Tank (L4D2 only).\n0 = Disabled.\n1 = Log only.\n3 or more = ban on n'th detection (Minimum possible is 3).\nIf your server changes weapon damage, set the limit of each weapon in addons/sourcemod/configs/lilac_survivor_damage.cfg.",
@@ -210,6 +210,7 @@ void lilac_config_setup()
     RegServerCmd("lilac_get_bans_length", lilac_get_bans_length, "Shows current ban lengths for all cheat types.", 0);
     RegServerCmd("lilac_ban_status", lilac_ban_status, "Prints banning status to server console.", 0);
     RegServerCmd("lilac_survivor_damage_reload", lilac_survivor_damage_reload, "Reads the survivor damage limits file again.", 0);
+    RegServerCmd("lilac_infected_damage_reload", lilac_infected_damage_reload, "Reads the infected damage limits file again.", 0);
     RegServerCmd("lilac_bhop_set", lilac_bhop_set, "Sets Custom Bhop settings", 0);
     RegServerCmd("lilac_discord_test", lilac_discord_test, "Sends a test report to the Discord webhook. Usage: lilac_discord_test [ban|kick|suspect]", 0);
 
