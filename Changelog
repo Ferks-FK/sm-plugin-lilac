@@ -1,3 +1,11 @@
+1.8.6
+- Survivor Damage Module: the limit of each weapon can be set in configs/lilac_survivor_damage.cfg (L4D2), for servers whose plugins change weapon damage. 0 turns the weapon off.
+- Add the lilac_survivor_damage_reload command, and lilac_ban_status lists the survivor damage limits in use.
+- Infected Damage Module: the limit of each infected class can be set in configs/lilac_infected_damage.cfg (L4D2), for servers whose plugins change infected damage. 0 turns the class off.
+- Add the lilac_infected_damage_reload command, and lilac_ban_status lists the infected damage limits in use.
+- Infected Damage Module: add the damage type to the detection details.
+- Add the lilac_telemetry ConVar to switch the measurement and debug logs on and off. They never change a decision.
+
 1.8.5
 - Add new Survivor Damage burst-exploit detection module (L4D2).
 - Add server TPS detection to pause Speedhack checks during server lag/stalls.
