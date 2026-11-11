@@ -4,7 +4,7 @@ Little Anti-Cheat (Lilac) is a free and open source anti-cheat for Source games,
 It was originally developed by J_Tanzanite, and this repository is a maintained fork of the [SRCDSLAB fork](https://github.com/srcdslab/sm-plugin-lilac), with extra focus on Left 4 Dead 2 servers.\
 This Anti-Cheat is by no means perfect, and it is bypassable to some extent, but it should still be helpful in dealing with cheaters :)
 
-Current version: **1.8.5** (see the [`Changelog`](Changelog) for the release notes).
+Current version: **1.8.6** (see the [`Changelog`](Changelog) for the release notes).
 
 ### Current Cheat Detections:
  - Angle-Cheats (Basic Anti-Aims and Duckspeed).
@@ -67,7 +67,7 @@ All settings are ConVars. The ones you are most likely to change:
 | `lilac_aimbot` | `5` | `0` = disabled, `1` = log only, `5` or more = ban on n'th detection. |
 | `lilac_aimlock` | `10` | `0` = disabled, `1` = log only, `5` or more = ban on n'th detection. |
 | `lilac_speedhack` | `3` | `0` = disabled, `1` = log only, `3` or more = ban on n'th detection. |
-| `lilac_infected_damage` | `3` | L4D2 only. `0` = disabled, `1` = log only, `3` or more = ban on n'th detection. |
+| `lilac_infected_damage` | `3` | L4D2 only. `0` = disabled, `1` = log only, `3` or more = ban on n'th detection. If a plugin changes the damage of an infected, set the limit of its class in `configs/lilac_infected_damage.cfg` (see the FAQ below). |
 | `lilac_survivor_damage` | `3` | L4D2 only. `0` = disabled, `1` = log only, `3` or more = ban on n'th detection. If your server changes weapon damage, set the limits in `configs/lilac_survivor_damage.cfg` (see the FAQ below). |
 | `lilac_telemetry` | `0` | Measurement and debug logs, they never change a decision. Add the values: `1` = aimbot files, `2` = speedhack shadow log and extra detection fields, `4` = command bursts, `8` = survivor damage clock. `15` = all. |
 | `lilac_convar` | `1` | `-1` = log only, `0` = disabled, `1` = kick, `2` = ban. |
@@ -85,6 +85,7 @@ Each ban threshold has a minimum (5 for Aimbot and Aimlock, 3 for Speedhack, Inf
  - `lilac_get_bans_length` - Shows the current ban lengths for all cheat types.
  - `lilac_ban_status` - Prints the banning status (which ban backend is being used).
  - `lilac_survivor_damage_reload` - Reads the survivor damage limits file again (L4D2).
+ - `lilac_infected_damage_reload` - Reads the infected damage limits file again (L4D2).
  - `lilac_bhop_set` - Sets custom Bhop settings (needs `lilac_bhop 3`).
  - `lilac_date_list` - Lists the date formatting options for `lilac_log_date`.
  - `lilac_discord_test [ban|kick|suspect]` - Sends a sample report to the Discord webhook, to check it works.
@@ -152,6 +153,11 @@ You can control them with `lilac_infected_damage` and `lilac_survivor_damage`: `
 A: The limits are the most damage one survivor can do to a Tank in one second, with the normal damage of the game. If a plugin changes the damage, give that weapon its own limit in `addons/sourcemod/configs/lilac_survivor_damage.cfg` (see `lilac_survivor_damage.cfg.example`). A value there replaces the built-in one, `0` turns the check off for that weapon. Apply it with `lilac_survivor_damage_reload`, and `lilac_ban_status` lists the limits in use.
 
 To find the right value, set `lilac_survivor_damage 1` and `lilac_telemetry 8`, play normally and look at the highest `GameClock` in `lilac_damage_clock.log` (or `DmgInWindow` in `lilac.log`) of players you trust. Use that value plus a margin of about 5%, and raise it until the lines stop.
+
+**Q: A plugin on my server changes the damage of an infected, how do I stop the Infected damage false positives?**\
+A: Lilac follows the damage cvars of the game (`z_pounce_damage`, `z_charge_max_damage`, `z_charger_pound_dmg`, ...) by itself, so changing the damage through those cvars needs nothing else. It cannot know the damage that a plugin adds, so give that class its own limit in `addons/sourcemod/configs/lilac_infected_damage.cfg` (copy `lilac_infected_damage.cfg.example`). The limit is the most damage one survivor can take from one infected in one second and it is used as it is, the damage cvars of that class stop counting. `0` turns the check off for that class. A class without a line keeps following the cvars. Apply it with `lilac_infected_damage_reload`, and `lilac_ban_status` lists the limits in use.
+
+To find the right value, set `lilac_infected_damage 1`, play normally and look at the highest `DmgInWindow` of players you trust (the `Weapon` and `Type` of the line tell where the damage comes from). Use that value plus a margin of about 5%.
 
 **Q: Why does Lilac ignore some detections?**\
 A: To avoid false positives, some detections are ignored when the player has a bad connection (`lilac_network_veto`, `lilac_loss_fix`), was just teleported or spawned, or is a ghost in L4D2.\
